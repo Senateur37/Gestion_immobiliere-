@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Baux | ImmoPilot{% endblock %}
+{% block eyebrow %}Gestion locative{% endblock %}
+{% block content %}
+<div class="toolbar">
+<div><h1>Baux &amp; locataires</h1><p class="intro">Suivez les engagements, échéances et loyers de votre portefeuille.</p></div>
+<div class="hero-actions">
+  <a class="button" href="{% url 'tenant_crm' %}">CRM locataires</a>
+  <a class="primary" href="{% url 'lease_create' %}">+ Nouveau bail</a>
+</div>
+</div>
+<div class="filters" style="margin-bottom:20px"><a class="{% if not status %}active{% endif %}" href="{% url 'lease_list' %}">Tous</a>{% for value,label in status_choices %}<a class="{% if status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}</div>
+<section class="panel"><table><thead><tr><th>Bail</th><th>Bien / unité</th><th>Locataire</th><th>Période</th><th>Loyer</th><th>État</th><th></th></tr></thead><tbody>
+{% for lease in leases %}<tr><td><strong>{{ lease.lease_number }}</strong><span class="sub">Préavis : {{ lease.notice_period_days }} jours</span></td><td>{{ lease.unit.property.name }}<span class="sub">Unité {{ lease.unit.unit_number }}</span></td><td>{{ lease.tenant.get_full_name|default:lease.tenant.username }}</td><td>{{ lease.start_date|date:'d/m/Y' }}<span class="sub">au {{ lease.end_date|date:'d/m/Y' }}</span></td><td class="amount">{{ lease.rent_amount|floatformat:0 }} FCFA<span class="sub">{{ lease.get_payment_frequency_display }}</span></td><td><span class="badge {{ lease.status }}">{{ lease.get_status_display }}</span></td><td><a href="{% url 'lease_update' lease.pk %}">Modifier</a> <a href="{% url 'lease_delete' lease.pk %}">Supprimer</a></td></tr>{% empty %}<tr><td colspan="7" class="empty" style="text-align:center;padding:45px">Aucun bail pour ce filtre.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

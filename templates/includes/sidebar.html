@@ -1,0 +1,20 @@
+<aside class="app-sidebar">
+<a class="side-brand" href="{% url 'dashboard' %}">Immo<span>Pilot</span></a>
+<div class="side-label">Pilotage</div>
+<nav>
+<a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Tableau de bord</a>
+<a class="{% if '/biens/unites' not in request.path and '/biens/' in request.path %}active{% endif %}" href="{% url 'property_list' %}">Biens immobiliers</a>
+<a class="{% if '/biens/unites' in request.path %}active{% endif %}" href="{% url 'unit_list' %}">Unités locatives</a>
+<a class="{% if '/baux/' in request.path %}active{% endif %}" href="{% url 'lease_list' %}">Baux</a>
+<a class="{% if '/baux/crm/' in request.path %}active{% endif %}" href="{% url 'tenant_crm' %}">Locataires</a>
+</nav>
+<div class="side-label">Opérations</div>
+<nav>
+<a class="{% if '/rapports/' in request.path %}active{% endif %}" href="{% url 'business_report' %}">Rapports</a>
+<a class="{% if '/paiements/' in request.path %}active{% endif %}" href="{% url 'payment_list' %}">Paiements</a>
+<a class="{% if '/maintenance/' in request.path %}active{% endif %}" href="{% url 'maintenance_list' %}">Maintenance</a>
+<a class="{% if '/documents/' in request.path %}active{% endif %}" href="{% url 'document_list' %}">Documents</a>
+<a class="{% if '/comptabilite/' in request.path %}active{% endif %}" href="{% url 'transaction_list' %}">Comptabilité</a>
+</nav>
+<div class="account"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.get_role_display }}</span><br><a href="{% url 'logout' %}">Se déconnecter</a></div>
+</aside>

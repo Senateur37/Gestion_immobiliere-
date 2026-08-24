@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | ImmoPilot{% endblock %}
+{% block eyebrow %}Gestion locative / {{ page_title }}{% endblock %}
+{% block content %}
+<h1>{{ page_title }}</h1>
+<p class="intro">Configurez les caractéristiques et les conditions locatives de cette unité.</p>
+{% if property %}<div class="notice">Bien rattaché : <strong>{{ property.name }}</strong> · {{ property.city }}</div>{% endif %}
+<form class="form-panel" method="post">{% csrf_token %}
+<div class="form-grid">
+{% for field in form %}<div class="field{% if field.name == 'description' %} full{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>{% endfor %}
+</div>
+<div class="form-actions"><a class="button" href="{% url 'unit_list' %}">Annuler</a><button class="button primary" type="submit">Enregistrer l'unité</button></div>
+</form>
+{% endblock %}

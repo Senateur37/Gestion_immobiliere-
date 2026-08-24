@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Documents | ImmoPilot{% endblock %}
+{% block eyebrow %}Bibliothèque documentaire{% endblock %}
+{% block content %}
+<div class="toolbar">
+<div><h1>Documents</h1><p class="intro">Retrouvez vos contrats, diagnostics, quittances et pièces administratives.</p></div>
+<a class="primary" href="{% url 'document_create' %}">+ Ajouter un document</a>
+</div>
+<div class="filters" style="margin-bottom:20px"><a class="{% if not category %}active{% endif %}" href="{% url 'document_list' %}">Tous</a>{% for value,label in category_choices %}<a class="{% if category == value %}active{% endif %}" href="?category={{ value }}">{{ label }}</a>{% endfor %}</div>
+<section class="panel"><table><thead><tr><th>Document</th><th>Catégorie</th><th>Ajouté le</th><th>Expiration</th><th>Signature</th><th></th></tr></thead><tbody>
+{% for document in documents %}<tr><td><span class="name">{{ document.title }}</span><span class="sub">{{ document.description|default:'Aucune description' }}</span></td><td>{{ document.get_category_display }}</td><td>{{ document.created_at|date:'d/m/Y' }}</td><td>{{ document.expires_at|date:'d/m/Y'|default:'Sans expiration' }}</td><td>{% if document.is_signed %}<span class="badge">Signé</span>{% else %}<span class="badge no">À signer</span>{% endif %}</td><td>{% if document.file %}<a href="{{ document.file.url }}">Ouvrir</a>{% endif %} <a href="{% url 'document_update' document.pk %}">Modifier</a> <a href="{% url 'document_delete' document.pk %}">Supprimer</a></td></tr>{% empty %}<tr><td colspan="6" class="empty" style="text-align:center;padding:45px">Aucun document dans cette catégorie.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

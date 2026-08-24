@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Rapports premium | ImmoPilot{% endblock %}
+{% block eyebrow %}Pilotage stratégique{% endblock %}
+{% block extra_head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>{% endblock %}
+{% block extra_style %}
+.charts-grid{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:22px}
+.chart-box{position:relative;height:260px}
+@media (max-width:900px){.charts-grid{grid-template-columns:1fr}}
+{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div>
+    <h1>Rapports premium</h1>
+    <p class="intro">Suivez la performance de votre patrimoine et identifiez immédiatement les leviers d’optimisation.</p>
+  </div>
+  <a class="primary" href="{% url 'transaction_create' %}">+ Nouvelle écriture</a>
+</div>
+
+<section class="summary">
+  <div class="metric"><span>Recettes</span><strong class="income">{{ income|floatformat:0 }} FCFA</strong></div>
+  <div class="metric"><span>Dépenses</span><strong class="expense">{{ expense|floatformat:0 }} FCFA</strong></div>
+  <div class="metric"><span>Solde net</span><strong class="net">{{ net|floatformat:0 }} FCFA</strong></div>
+</section>
+
+<section class="stats">
+  <div class="stat" style="--accent:#16877b"><span class="stat-label">Taux d'occupation</span><strong>{{ occupancy_rate }}%</strong><span class="stat-meta">{{ occupied_units }} / {{ unit_count }} unités</span></div>
+  <div class="stat" style="--accent:#3a79aa"><span class="stat-label">Loyer mensuel</span><strong>{{ total_rent|floatformat:0 }} FCFA</strong><span class="stat-meta">Moyenne {{ average_rent|floatformat:0 }} FCFA</span></div>
+  <div class="stat" style="--accent:#e9aa3a"><span class="stat-label">À encaisser</span><strong>{{ pending_amount|floatformat:0 }} FCFA</strong><span class="stat-meta">{{ pending_payments }} paiement(s) à suivre</span></div>
+  <div class="stat" style="--accent:#c96759"><span class="stat-label">Interventions</span><strong>{{ open_maintenance }}</strong><span class="stat-meta">{{ due_soon }} échéance(s) bientôt</span></div>
+</section>
+
+<section class="charts-grid">
+  <div class="panel">
+    <div class="panel-header"><h2>Recettes &amp; dépenses (6 derniers mois)</h2></div>
+    <div class="chart-box"><canvas id="revenueChart"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><h2>Occupation des unités</h2></div>
+    <div class="chart-box"><canvas id="occupancyChart"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><h2>Paiements par statut</h2></div>
+    <div class="chart-box"><canvas id="paymentChart"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><h2>Maintenance par priorité</h2></div>
+    <div class="chart-box"><canvas id="maintenanceChart"></canvas></div>
+  </div>
+</section>
+
+{{ month_labels|json_script:"month-labels" }}
+{{ month_income|json_script:"month-income" }}
+{{ month_expense|json_script:"month-expense" }}
+{{ unit_status_labels|json_script:"unit-status-labels" }}
+{{ unit_status_data|json_script:"unit-status-data" }}
+{{ payment_status_labels|json_script:"payment-status-labels" }}
+{{ payment_status_data|json_script:"payment-status-data" }}
+{{ priority_labels|json_script:"priority-labels" }}
+{{ priority_data|json_script:"priority-data" }}
+<script>
+(function () {
+  const readData = (id) => JSON.parse(document.getElementById(id).textContent);
+  const legendBottom = { plugins: { legend: { position: 'bottom' } }, responsive: true, maintainAspectRatio: false };
+
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: readData('month-labels'),
+      datasets: [
+        { label: 'Recettes', data: readData('month-income'), backgroundColor: '#16877b' },
+        { label: 'Dépenses', data: readData('month-expense'), backgroundColor: '#c96759' },
+      ],
+    },
+    options: legendBottom,
+  });
+
+  new Chart(document.getElementById('occupancyChart'), {
+    type: 'doughnut',
+    data: {
+      labels: readData('unit-status-labels'),
+      datasets: [{ data: readData('unit-status-data'), backgroundColor: ['#3a79aa', '#16877b', '#e9aa3a', '#c96759'] }],
+    },
+    options: legendBottom,
+  });
+
+  new Chart(document.getElementById('paymentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: readData('payment-status-labels'),
+      datasets: [{ data: readData('payment-status-data'), backgroundColor: ['#e9aa3a', '#16877b', '#3a79aa', '#c96759', '#94a3b8'] }],
+    },
+    options: legendBottom,
+  });
+
+  new Chart(document.getElementById('maintenanceChart'), {
+    type: 'bar',
+    data: {
+      labels: readData('priority-labels'),
+      datasets: [{ label: 'Demandes', data: readData('priority-data'), backgroundColor: '#3a79aa' }],
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+})();
+</script>
+
+<div class="dashboard-grid" style="margin-top:22px;">
+  <section class="panel">
+    <div class="panel-header"><h2>Paiements à traiter</h2><a href="{% url 'payment_list' %}"><span>Voir tout</span></a></div>
+    {% if recent_payments %}
+    <table>
+      <thead>
+        <tr><th>Locataire</th><th>Échéance</th><th>Montant</th><th>Statut</th></tr>
+      </thead>
+      <tbody>
+        {% for payment in recent_payments %}
+        <tr>
+          <td><span class="name">{{ payment.lease.tenant.get_full_name|default:payment.lease.tenant.username }}</span><span class="sub">{{ payment.lease.unit.property.name }}</span></td>
+          <td>{{ payment.due_date|date:'d/m/Y' }}</td>
+          <td class="amount">{{ payment.amount|floatformat:0 }} FCFA</td>
+          <td><span class="badge {{ payment.status }}">{{ payment.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Aucun paiement en attente pour le moment.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-header"><h2>Maintenance</h2><a href="{% url 'maintenance_list' %}"><span>Voir tout</span></a></div>
+    {% if recent_maintenance %}
+    <table>
+      <thead>
+        <tr><th>Demande</th><th>Priorité</th><th>Statut</th></tr>
+      </thead>
+      <tbody>
+        {% for item in recent_maintenance %}
+        <tr>
+          <td><span class="name">{{ item.title }}</span><span class="sub">{{ item.unit.property.name }} · {{ item.unit.unit_number }}</span></td>
+          <td><span class="badge {{ item.priority }}">{{ item.get_priority_display }}</span></td>
+          <td><span class="badge {{ item.status }}">{{ item.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">Aucune demande de maintenance active.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Biens immobiliers | ImmoPilot{% endblock %}
+{% block eyebrow %}Portefeuille immobilier{% endblock %}
+{% block header_meta %}{{ property_count }} bien{{ property_count|pluralize }}{% endblock %}
+{% block content %}
+<h1>Mes biens</h1>
+<p class="intro">Centralisez vos propriétés et gardez une vue claire de votre patrimoine.</p>
+<div class="toolbar">
+<form class="search" method="get"><input name="q" value="{{ search }}" placeholder="Rechercher par nom ou ville" aria-label="Rechercher"><button type="submit">Rechercher</button></form>
+<a class="primary" href="{% url 'property_create' %}">+ Ajouter un bien</a>
+</div>
+{% if properties %}
+<section class="grid-cards">
+{% for property in properties %}
+<article class="card">
+<div class="card-top"><div><h2>{{ property.name }}</h2><span class="sub">{{ property.address }}, {{ property.postal_code }} {{ property.city }}</span></div>{% if property.is_active %}<span class="badge">Actif</span>{% else %}<span class="badge off">Inactif</span>{% endif %}</div>
+<div class="meta"><span>Type<strong>{{ property.get_property_type_display }}</strong></span><span>Surface<strong>{{ property.total_area|floatformat:0 }} m²</strong></span></div>
+<div class="actions"><a href="{% url 'property_update' property.pk %}">Modifier</a><a href="{% url 'property_delete' property.pk %}">Supprimer</a></div>
+</article>
+{% endfor %}
+</section>
+{% else %}
+<div class="empty-box"><h2>{% if search %}Aucun résultat{% else %}Votre portefeuille est vide{% endif %}</h2><p>{% if search %}Essayez une autre recherche.{% else %}Ajoutez votre premier bien pour commencer à piloter votre activité.{% endif %}</p>{% if not search %}<a class="primary" href="{% url 'property_create' %}">Créer mon premier bien</a>{% endif %}</div>
+{% endif %}
+{% endblock %}

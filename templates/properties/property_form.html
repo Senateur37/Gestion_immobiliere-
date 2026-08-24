@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | ImmoPilot{% endblock %}
+{% block eyebrow %}Portefeuille immobilier / {{ page_title }}{% endblock %}
+{% block content %}
+<h1>{{ page_title }}</h1>
+<p class="intro">Renseignez les informations essentielles de votre propriété.</p>
+<form class="form-panel" method="post">{% csrf_token %}
+<div class="form-grid">
+{% for field in form %}<div class="field{% if field.name == 'description' %} full{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>{% endfor %}
+</div>
+<div class="form-actions"><a class="button" href="{% url 'property_list' %}">Annuler</a><button class="button primary" type="submit">Enregistrer le bien</button></div>
+</form>
+{% endblock %}

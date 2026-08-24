@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Design System - Premium SaaS Edition
+   ========================================================================== */
+
+:root {
+  /* HSL Colors for fine tuning and dynamic theming */
+  --hue-primary: 220;
+  --hue-secondary: 260;
+  
+  --primary-light: hsl(var(--hue-primary), 80%, 65%);
+  --primary: hsl(var(--hue-primary), 85%, 55%);
+  --primary-dark: hsl(var(--hue-primary), 90%, 45%);
+  
+  --secondary: hsl(var(--hue-secondary), 75%, 60%);
+  
+  --success: hsl(150, 70%, 45%);
+  --warning: hsl(45, 90%, 55%);
+  --danger: hsl(350, 80%, 55%);
+
+  /* Backgrounds & Surfaces (Light Theme) */
+  --bg-body: hsl(210, 20%, 98%);
+  --bg-surface: hsl(0, 0%, 100%);
+  --bg-surface-glass: hsla(0, 0%, 100%, 0.75);
+
+  /* Typography */
+  --text-primary: hsl(220, 40%, 15%);
+  --text-secondary: hsl(220, 20%, 40%);
+  --text-tertiary: hsl(220, 15%, 60%);
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Borders & Shadows */
+  --border-radius-sm: 0.5rem;
+  --border-radius-md: 0.75rem;
+  --border-radius-lg: 1.5rem;
+  --border-color: hsl(220, 15%, 90%);
+  
+  --shadow-sm: 0 1px 2px hsla(220, 40%, 15%, 0.05);
+  --shadow-md: 0 4px 6px -1px hsla(220, 40%, 15%, 0.1), 0 2px 4px -1px hsla(220, 40%, 15%, 0.06);
+  --shadow-lg: 0 10px 15px -3px hsla(220, 40%, 15%, 0.1), 0 4px 6px -2px hsla(220, 40%, 15%, 0.05);
+  --shadow-glass: 0 8px 32px hsla(220, 40%, 15%, 0.08);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  --bg-body: hsl(220, 40%, 10%);
+  --bg-surface: hsl(220, 35%, 15%);
+  --bg-surface-glass: hsla(220, 35%, 15%, 0.75);
+  
+  --text-primary: hsl(0, 0%, 95%);
+  --text-secondary: hsl(220, 15%, 70%);
+  --text-tertiary: hsl(220, 15%, 50%);
+  
+  --border-color: hsl(220, 30%, 25%);
+}
+
+/* ==========================================================================
+   Global Resets & Base Styles
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* ==========================================================================
+   Layout & Glassmorphism
+   ========================================================================== */
+.glass-panel {
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-glass);
+}
+
+/* Base App Layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-normal);
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 3rem;
+  background-color: var(--bg-body);
+}
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+/* Premium Card */
+.premium-card {
+  background-color: var(--bg-surface);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 14px 0 hsla(var(--hue-primary), 85%, 55%, 0.39);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px hsla(var(--hue-primary), 85%, 55%, 0.4);
+}
+
+/* Smooth gradients for premium feel */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

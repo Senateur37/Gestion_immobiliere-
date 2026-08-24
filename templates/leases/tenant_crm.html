@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}CRM locataires | ImmoPilot{% endblock %}
+{% block eyebrow %}Relations locataires{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div>
+    <h1>CRM locataires</h1>
+    <p class="intro">Pilotage premium des rapports locatifs, de la satisfaction et des risques de non-paiement.</p>
+  </div>
+  <a class="primary" href="{% url 'lease_create' %}">+ Nouveau bail</a>
+</div>
+
+<section class="stats">
+  <div class="stat" style="--accent:#16877b"><span class="stat-label">Locataires</span><strong>{{ tenant_count }}</strong><span class="stat-meta">Personnes actives</span></div>
+  <div class="stat" style="--accent:#3a79aa"><span class="stat-label">Baux actifs</span><strong>{{ active_leases }}</strong><span class="stat-meta">Contrats en cours</span></div>
+  <div class="stat" style="--accent:#e9aa3a"><span class="stat-label">Loyer mensuel</span><strong>{{ monthly_rent|floatformat:0 }} FCFA</strong><span class="stat-meta">Récurrence garantie</span></div>
+  <div class="stat" style="--accent:#c96759"><span class="stat-label">Retards</span><strong>{{ overdue_count }}</strong><span class="stat-meta">{{ pending_amount|floatformat:0 }} FCFA à suivre</span></div>
+</section>
+
+<div class="filters" style="margin:22px 0 18px">
+  <a class="{% if not status %}active{% endif %}" href="{% url 'tenant_crm' %}">Tous</a>
+  {% for value,label in status_choices %}
+    <a class="{% if status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  <table>
+    <thead>
+      <tr>
+        <th>Locataire</th>
+        <th>Contact</th>
+        <th>Bien / unité</th>
+        <th>Loyer</th>
+        <th>Paiement</th>
+        <th>État</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lease in leases %}
+      <tr>
+        <td>
+          <span class="name">{{ lease.tenant.get_full_name|default:lease.tenant.username }}</span>
+          <span class="sub">Bail {{ lease.lease_number }}</span>
+        </td>
+        <td>
+          <span class="name">{{ lease.tenant.phone|default:'Non renseigné' }}</span>
+          <span class="sub">{{ lease.tenant.email|default:'Aucun e-mail' }}</span>
+        </td>
+        <td>
+          {{ lease.unit.property.name }}
+          <span class="sub">Unité {{ lease.unit.unit_number }}</span>
+        </td>
+        <td class="amount">{{ lease.rent_amount|floatformat:0 }} FCFA<span class="sub">{{ lease.get_payment_frequency_display }}</span></td>
+        <td>
+          {% with latest=lease.payments.all|dictsortreversed:'due_date'|first %}
+            {% if latest %}
+              <span class="name">{{ latest.amount|floatformat:0 }} FCFA</span>
+              <span class="sub">Échéance {{ latest.due_date|date:'d/m/Y' }}</span>
+            {% else %}
+              <span class="empty">Aucun paiement</span>
+            {% endif %}
+          {% endwith %}
+        </td>
+        <td><span class="badge {{ lease.status }}">{{ lease.get_status_display }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="empty" style="text-align:center;padding:45px">Aucun locataire pour ce filtre.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

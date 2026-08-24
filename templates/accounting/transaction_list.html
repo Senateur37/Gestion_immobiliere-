@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Comptabilité | ImmoPilot{% endblock %}
+{% block eyebrow %}Pilotage financier{% endblock %}
+{% block content %}
+<div class="toolbar">
+<div><h1>Comptabilité</h1><p class="intro">Suivez vos recettes, dépenses et votre solde net en FCFA.</p></div>
+<a class="primary" href="{% url 'transaction_create' %}">+ Nouvelle écriture</a>
+</div>
+<section class="summary">
+<div class="metric"><span>Recettes</span><strong class="income">{{ income|floatformat:0 }} FCFA</strong></div>
+<div class="metric"><span>Dépenses</span><strong class="expense">{{ expense|floatformat:0 }} FCFA</strong></div>
+<div class="metric"><span>Solde net</span><strong class="net">{{ net|floatformat:0 }} FCFA</strong></div>
+</section>
+<div class="filters" style="margin-bottom:20px"><a class="{% if not transaction_type %}active{% endif %}" href="{% url 'transaction_list' %}">Toutes les écritures</a><a class="{% if transaction_type == 'income' %}active{% endif %}" href="?type=income">Recettes</a><a class="{% if transaction_type == 'expense' %}active{% endif %}" href="?type=expense">Dépenses</a></div>
+<section class="panel"><table><thead><tr><th>Libellé</th><th>Date</th><th>Nature</th><th>Montant</th><th></th></tr></thead><tbody>
+{% for transaction in transactions %}<tr><td><strong>{{ transaction.label }}</strong><span class="sub">{{ transaction.notes|default:'Aucune note' }}</span></td><td>{{ transaction.transaction_date|date:'d/m/Y' }}</td><td><span class="badge {{ transaction.transaction_type }}">{{ transaction.get_transaction_type_display }}</span></td><td class="amount">{{ transaction.amount|floatformat:0 }} FCFA</td><td><a href="{% url 'transaction_update' transaction.pk %}">Modifier</a> <a href="{% url 'transaction_delete' transaction.pk %}">Supprimer</a></td></tr>{% empty %}<tr><td colspan="5" class="empty" style="text-align:center;padding:45px">Aucune écriture comptable pour ce filtre.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

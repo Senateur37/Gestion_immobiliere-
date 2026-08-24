@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Maintenance | ImmoPilot{% endblock %}
+{% block eyebrow %}Opérations / Parc immobilier{% endblock %}
+{% block content %}
+<div class="toolbar">
+<div><h1>Suivi maintenance</h1><p class="intro">Centralisez les demandes, priorités et interventions à planifier.</p></div>
+<a class="primary" href="{% url 'maintenance_create' %}">+ Nouvelle demande</a>
+</div>
+<div class="filters" style="margin-bottom:20px"><a class="{% if not status %}active{% endif %}" href="{% url 'maintenance_list' %}">Toutes</a>{% for value,label in status_choices %}<a class="{% if status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}</div>
+<section class="panel"><table><thead><tr><th>Demande</th><th>Unité</th><th>Priorité</th><th>Assignée à</th><th>État</th><th></th></tr></thead><tbody>
+{% for item in requests %}<tr><td><strong>{{ item.title }}</strong><span class="sub">{{ item.submitted_at|date:'d/m/Y H:i' }}</span></td><td>{{ item.unit.property.name }}<span class="sub">Unité {{ item.unit.unit_number }}</span></td><td class="name">{{ item.get_priority_display }}</td><td>{{ item.assigned_to.get_full_name|default:'Non assignée' }}</td><td><span class="badge {{ item.status }}">{{ item.get_status_display }}</span></td><td><a href="{% url 'maintenance_update' item.pk %}">Modifier</a> <a href="{% url 'maintenance_delete' item.pk %}">Supprimer</a></td></tr>{% empty %}<tr><td colspan="6" class="empty" style="text-align:center;padding:45px">Aucune demande pour ce filtre.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

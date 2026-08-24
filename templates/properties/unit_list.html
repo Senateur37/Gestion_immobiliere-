@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Unités locatives | ImmoPilot{% endblock %}
+{% block eyebrow %}Gestion locative / Unités{% endblock %}
+{% block content %}
+<h1>Unités locatives</h1>
+<p class="intro">Suivez la disponibilité, l'occupation et les loyers de chaque unité.</p>
+<div class="toolbar">
+<div class="filters"><a class="{% if not status %}active{% endif %}" href="{% url 'unit_list' %}">Toutes</a>{% for value,label in status_choices %}<a class="{% if status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}</div>
+<a class="primary" href="{% url 'unit_create' %}">+ Ajouter une unité</a>
+</div>
+<section class="panel"><table><thead><tr><th>Unité</th><th>Bien</th><th>Loyer mensuel</th><th>Surface</th><th>État</th><th></th></tr></thead><tbody>
+{% for unit in units %}<tr><td><span class="name">{{ unit.unit_number }}</span><span class="sub">{{ unit.rooms }} pièce{{ unit.rooms|pluralize }}</span></td><td>{{ unit.property.name }}<span class="sub">{{ unit.property.city }}</span></td><td>{{ unit.rent_amount|floatformat:0 }} FCFA</td><td>{{ unit.area|floatformat:0 }} m²</td><td><span class="badge {{ unit.status }}">{{ unit.get_status_display }}</span></td><td><a href="{% url 'unit_update' unit.pk %}">Modifier</a> <a href="{% url 'unit_delete' unit.pk %}">Supprimer</a></td></tr>{% empty %}<tr><td colspan="6" class="empty" style="text-align:center;padding:45px">Aucune unité ne correspond à ce filtre.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

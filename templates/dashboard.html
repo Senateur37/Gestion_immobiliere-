@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord | ImmoPilot{% endblock %}
+{% block eyebrow %}Espace propriétaire{% endblock %}
+{% block content %}
+<section class="hero-panel">
+  <div>
+    <span class="eyebrow">Performance</span>
+    <h1>Bonjour, {{ request.user.first_name|default:request.user.username }}</h1>
+    <p class="intro">Votre portefeuille immobilier est en bonne santé. Surveillez les revenus, les loyers à encaisser et les interventions à traiter.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="primary" href="{% url 'property_create' %}">Ajouter un bien</a>
+    <a class="button" href="{% url 'lease_list' %}">Voir les baux</a>
+  </div>
+</section>
+
+<div class="floating-row">
+  <div class="mini-card">
+    <div class="label">Baux actifs</div>
+    <strong>{{ active_leases }}</strong>
+    <small>{{ occupied_units }} unité{{ occupied_units|pluralize }} occupée{{ occupied_units|pluralize }}</small>
+  </div>
+  <div class="mini-card">
+    <div class="label">Paiements ouverts</div>
+    <strong>{{ pending_payments }}</strong>
+    <small>{{ pending_amount|floatformat:0 }} FCFA à suivre</small>
+  </div>
+  <div class="mini-card">
+    <div class="label">Demandes de maintenance</div>
+    <strong>{{ open_maintenance }}</strong>
+    <small>À traiter sans délai</small>
+  </div>
+</div>
+
+<section class="stats">
+  <div class="stat" style="--accent:#16877b"><span class="stat-label">Biens immobiliers</span><strong>{{ property_count }}</strong><span class="stat-meta">Au total</span></div>
+  <div class="stat" style="--accent:#3a79aa"><span class="stat-label">Unités occupées</span><strong>{{ occupied_units }} <small>/ {{ unit_count }}</small></strong><span class="stat-meta">Unités locatives</span></div>
+  <div class="stat" style="--accent:#e9aa3a"><span class="stat-label">Revenus mensuels</span><strong>{{ monthly_revenue|floatformat:0 }} FCFA</strong><span class="stat-meta">Baux actifs</span></div>
+  <div class="stat" style="--accent:#c96759"><span class="stat-label">À encaisser</span><strong>{{ pending_amount|floatformat:0 }} FCFA</strong><span class="stat-meta">{{ pending_payments }} paiement{{ pending_payments|pluralize }} à suivre</span></div>
+</section>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-header"><h2>Biens récents</h2><a href="{% url 'property_list' %}"><span>Voir tout</span></a></div>
+    {% if recent_properties %}
+      <table>
+        <thead>
+          <tr><th>Bien</th><th>Type</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+          {% for property in recent_properties %}
+            <tr>
+              <td><span class="name">{{ property.name }}</span><span class="sub">{{ property.address }}, {{ property.city }}</span></td>
+              <td>{{ property.get_property_type_display }}</td>
+              <td>{% if property.is_active %}<span class="badge">Actif</span>{% else %}<span class="badge off">Inactif</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">Aucun bien enregistré. <a href="{% url 'property_create' %}">Ajoutez votre premier bien</a>.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-header"><h2>Accès rapides</h2></div>
+    <div class="quick-links">
+      <a href="{% url 'property_create' %}"><span><strong>Ajouter un bien</strong><small>Créer une fiche propriété</small></span><b>+</b></a>
+      <a href="{% url 'lease_create' %}"><span><strong>Nouveau bail</strong><small>Enregistrer un contrat locatif</small></span><b>+</b></a>
+      <a href="{% url 'maintenance_create' %}"><span><strong>Nouvelle demande</strong><small>Déclarer une intervention</small></span><b>+</b></a>
+      <a href="{% url 'document_create' %}"><span><strong>Ajouter un document</strong><small>Classer une pièce importante</small></span><b>+</b></a>
+    </div>
+  </section>
+</div>
+{% endblock %}
