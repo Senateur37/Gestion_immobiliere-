@@ -1,34 +1,422 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connexion | ImmoPilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #152536; --navy:#0d1d2c; --navy-2:#183b57; --teal:#0f9c95; --teal-strong:#0b7a73; --bg:#edf4f7; }
-    * { box-sizing: border-box; }
-    body { align-items: center; background: radial-gradient(circle at top left, rgba(16,156,149,.18), transparent 28%), linear-gradient(135deg,#edf4f7,#dfeaf3); display: flex; justify-content: center; margin: 0; min-height: 100vh; padding: 24px; }
-    .login { background: rgba(255,255,255,.9); border: 1px solid rgba(13,29,44,.08); border-radius: 22px; box-shadow: 0 28px 65px rgba(11,29,44,.14); max-width: 440px; padding: 38px 34px; width: 100%; backdrop-filter: blur(12px); }
-    .brand { color: var(--navy); font-size: 1.28rem; font-weight: 900; letter-spacing: .02em; }
-    .brand span { color: var(--teal); }
-    .eyebrow { color: var(--teal-strong); font-size: .72rem; font-weight: 800; letter-spacing: .14em; margin-top: 42px; text-transform: uppercase; }
-    h1 { font-size: 2.2rem; letter-spacing: -.05em; margin: 10px 0; }
-    .intro { color: #617286; font-size: .92rem; margin: 0 0 28px; line-height: 1.55; }
-    form p { margin: 0 0 18px; }
-    label { display: block; font-size: .8rem; font-weight: 700; margin-bottom: 7px; }
-    input { background: #f9fbfc; border: 1px solid #d9e3eb; border-radius: 10px; font: inherit; padding: 12px 13px; width: 100%; }
-    input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15,156,149,.12); outline: 0; }
-    .errorlist { color: #b95d46; font-size: .8rem; list-style: none; padding: 0; }
-    button { background: linear-gradient(135deg,var(--teal) 0%,var(--teal-strong) 100%); border: 0; border-radius: 10px; color: white; cursor: pointer; font: inherit; font-weight: 800; margin-top: 8px; padding: 14px; width: 100%; box-shadow: 0 16px 26px rgba(15,156,149,.18); }
-    button:hover { filter: brightness(1.02); }
-    @media (max-width: 480px) { .login { padding: 30px 24px; } .eyebrow { margin-top: 34px; } }
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.5);
+      --bg-gradient-1: #0f172a;
+      --bg-gradient-2: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(15, 23, 42, 0.6);
+      --input-border: rgba(255, 255, 255, 0.1);
+      --input-focus: #3b82f6;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-gradient-1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated Background Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      animation: float 20s infinite ease-in-out alternate;
+    }
+    
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(59, 130, 246, 0.3);
+      top: -100px;
+      left: -100px;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: rgba(16, 185, 129, 0.2);
+      bottom: -150px;
+      right: -100px;
+      animation-delay: -5s;
+    }
+    
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: rgba(139, 92, 246, 0.2);
+      top: 30%;
+      left: 60%;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 50px) scale(1.1); }
+    }
+
+    /* Glassmorphism Card */
+    .login-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Brand Header */
+    .brand {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      box-shadow: 0 10px 25px -5px var(--primary-glow);
+    }
+
+    .brand-icon svg {
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+
+    .brand h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .brand p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      transition: color 0.2s;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper svg {
+      position: absolute;
+      left: 16px;
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+      transition: color 0.3s;
+    }
+
+    .form-group input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 14px 16px 14px 46px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .form-group input::placeholder {
+      color: #475569;
+    }
+
+    .form-group input:focus {
+      border-color: var(--input-focus);
+      background: rgba(15, 23, 42, 0.8);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+
+    .form-group input:focus + svg,
+    .form-group input:focus ~ svg,
+    .form-group.focused svg {
+      color: var(--input-focus);
+    }
+
+    /* Error Messages */
+    .errorlist {
+      list-style: none;
+      color: var(--error);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      padding-left: 4px;
+      font-weight: 500;
+    }
+    
+    .non-field-errors {
+      background: var(--error-bg);
+      border-left: 4px solid var(--error);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+      color: #fca5a5;
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 20px -5px var(--primary-glow);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -5px var(--primary-glow);
+    }
+    
+    .submit-btn:active {
+      transform: translateY(1px);
+    }
+
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+      transform: skewX(-25deg);
+      animation: shine 6s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -100%; }
+      20% { left: 200%; }
+      100% { left: 200%; }
+    }
+
+    /* Options / Links */
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: -8px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .remember-me input {
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .forgot-pwd {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .forgot-pwd:hover {
+      color: #60a5fa;
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 32px 24px;
+      }
+    }
   </style>
 </head>
-<body><main class="login">
-  <div class="brand">Immo<span>Pilot</span></div>
-  <div class="eyebrow">Espace sécurisé</div>
-  <h1>Bienvenue</h1>
-  <p class="intro">Connectez-vous pour piloter votre patrimoine immobilier avec une vue claire et premium.</p>
-  <form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Accéder à mon espace</button>{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}</form>
-</main>
+<body>
+  <!-- Animated Background Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+            <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/>
+            <path d="M9 7h6"/>
+            <path d="M9 11h6"/>
+          </svg>
+        </div>
+        <h1>ImmoPilot</h1>
+        <p>Gérez votre patrimoine avec élégance.</p>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="non-field-errors">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}">Identifiant</label>
+          <div class="input-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" placeholder="Nom d'utilisateur" required>
+          </div>
+          {% if form.username.errors %}
+            <ul class="errorlist">
+              {% for error in form.username.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}">Mot de passe</label>
+          <div class="input-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" placeholder="••••••••" required>
+          </div>
+          {% if form.password.errors %}
+            <ul class="errorlist">
+              {% for error in form.password.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" name="remember">
+            Se souvenir de moi
+          </label>
+          <a href="#" class="forgot-pwd">Mot de passe oublié ?</a>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          Accéder à l'espace
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+        
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+      </form>
+    </div>
+  </main>
+  
+  <script>
+    // Add active state to SVG icons when inputs are focused
+    const inputs = document.querySelectorAll('.form-group input');
+    inputs.forEach(input => {
+      input.addEventListener('focus', () => {
+        input.parentElement.querySelector('svg').style.color = 'var(--input-focus)';
+      });
+      input.addEventListener('blur', () => {
+        if (!input.value) {
+          input.parentElement.querySelector('svg').style.color = '#64748b';
+        }
+      });
+    });
+  </script>
 </body>
 </html>
