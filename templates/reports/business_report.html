@@ -13,7 +13,13 @@
     <h1>Rapports premium</h1>
     <p class="intro">Suivez la performance de votre patrimoine et identifiez immédiatement les leviers d’optimisation.</p>
   </div>
-  <a class="primary" href="{% url 'transaction_create' %}">+ Nouvelle écriture</a>
+  <div style="display:flex; gap:10px;">
+    <button onclick="window.print()" class="button" style="display:flex; align-items:center; gap:5px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"></path></svg>
+      Exporter PDF
+    </button>
+    <a class="primary" href="{% url 'transaction_create' %}">+ Nouvelle écriture</a>
+  </div>
 </div>
 
 <section class="summary">

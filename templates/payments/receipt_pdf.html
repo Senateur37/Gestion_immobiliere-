@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Quittance de Loyer - {{ payment.payment_number }}{% endblock %}
+
+{% block extra_style %}
+<style>
+  .receipt-container { max-width: 800px; margin: 40px auto; background: var(--bg-card); padding: 50px; border-radius: 20px; box-shadow: var(--shadow-md); position: relative; overflow: hidden; }
+  .receipt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; }
+  .receipt-logo { font-size: 2rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 15px; }
+  .receipt-logo img { max-height: 50px; }
+  .receipt-title { text-align: right; }
+  .receipt-title h1 { font-size: 2rem; color: var(--primary); margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+  .receipt-title p { color: var(--text-muted); margin: 5px 0 0; font-size: 0.9rem; }
+  
+  .receipt-details { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px; }
+  .info-box { background: rgba(14, 165, 233, 0.05); padding: 20px; border-radius: 12px; border: 1px solid rgba(14, 165, 233, 0.1); }
+  .info-box h3 { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px; }
+  .info-box p { margin: 5px 0; font-size: 1rem; color: var(--text-main); font-weight: 500; }
+  .info-box strong { font-weight: 700; }
+  
+  .receipt-amount { text-align: center; padding: 40px; background: linear-gradient(135deg, var(--primary) 0%, #0369a1 100%); color: white; border-radius: 16px; margin-bottom: 40px; box-shadow: 0 10px 25px var(--primary-glow); }
+  .receipt-amount p { margin: 0; font-size: 1.2rem; opacity: 0.9; }
+  .receipt-amount h2 { margin: 10px 0 0; font-size: 3.5rem; font-weight: 800; }
+  
+  .receipt-footer { text-align: center; color: var(--text-muted); font-size: 0.85rem; border-top: 1px dashed var(--border-color); padding-top: 20px; }
+  
+  .print-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: var(--text-main); color: var(--bg-app); border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; position: absolute; top: 20px; right: 20px; }
+  .print-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  
+  @media print {
+    body { background: white !important; }
+    .receipt-container { box-shadow: none !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; border: none !important; background: white !important; }
+    .print-btn { display: none !important; }
+    .receipt-amount { background: var(--primary) !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .info-box { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h1, h2, h3, p, strong { color: black !important; }
+    .receipt-amount p, .receipt-amount h2 { color: white !important; }
+  }
+</style>
+{% endblock %}
+
+{% block eyebrow %}Opérations{% endblock %}
+
+{% block content %}
+<div class="receipt-container">
+  <button onclick="window.print()" class="print-btn">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2"></path><path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4"></path><path d="M7 13m0 2a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2z"></path></svg>
+    Imprimer PDF
+  </button>
+
+  <div class="receipt-header">
+    <div class="receipt-logo">
+      {% if site_settings.logo %}
+        <img src="{{ site_settings.logo.url }}" alt="Logo">
+      {% endif %}
+      {{ site_settings.app_name|default:"ImmoPilot" }}
+    </div>
+    <div class="receipt-title">
+      <h1>Quittance de loyer</h1>
+      <p>Réf: {{ payment.payment_number }}</p>
+      <p>Date d'émission: {% now "j F Y" %}</p>
+    </div>
+  </div>
+
+  <div class="receipt-details">
+    <div class="info-box">
+      <h3>Bailleur</h3>
+      <p><strong>{{ payment.lease.unit.property.owner.get_full_name|default:payment.lease.unit.property.owner.username }}</strong></p>
+      <p>{{ payment.lease.unit.property.owner.email }}</p>
+    </div>
+    <div class="info-box">
+      <h3>Locataire</h3>
+      <p><strong>{{ payment.lease.tenant.get_full_name|default:payment.lease.tenant.username }}</strong></p>
+      <p>{{ payment.lease.tenant.email }}</p>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-bottom: 40px; width: 100%;">
+    <h3>Détails de la location</h3>
+    <p><strong>Bien :</strong> {{ payment.lease.unit.property.name }} - {{ payment.lease.unit.unit_number }}</p>
+    <p><strong>Adresse :</strong> {{ payment.lease.unit.property.address }}</p>
+    <p><strong>Période concernée :</strong> Échéance du {{ payment.due_date|date:"j F Y" }}</p>
+  </div>
+
+  <div class="receipt-amount">
+    <p>Montant payé ({{ payment.get_payment_method_display|default:"Non spécifié" }})</p>
+    <h2>{{ payment.amount }} FCFA</h2>
+  </div>
+
+  <div class="receipt-footer">
+    <p>Le bailleur déclare avoir reçu du locataire la somme indiquée ci-dessus, au titre du paiement du loyer et des charges pour les locaux désignés.</p>
+    <p>Cette quittance annule tout reçu donné précédemment pour la même période. À conserver précieusement.</p>
+    <p style="margin-top: 20px; font-weight: bold;">Généré par {{ site_settings.app_name|default:"ImmoPilot" }} Premium</p>
+  </div>
+</div>
+{% endblock %}

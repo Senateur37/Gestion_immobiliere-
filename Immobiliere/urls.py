@@ -23,6 +23,7 @@ from Comptabilite.views import (
     dashboard,
     payment_delete,
     payment_list,
+    payment_receipt,
     payment_update,
     transaction_create,
     transaction_delete,
@@ -35,6 +36,7 @@ urlpatterns = [
     path('rapports/', business_report, name='business_report'),
     path('biens/', include('Proprietes.urls')),
     path('paiements/', payment_list, name='payment_list'),
+    path('paiements/<int:pk>/quittance/', payment_receipt, name='payment_receipt'),
     path('paiements/<int:pk>/modifier/', payment_update, name='payment_update'),
     path('paiements/<int:pk>/supprimer/', payment_delete, name='payment_delete'),
     path('baux/', include('Locations.urls')),
@@ -45,5 +47,6 @@ urlpatterns = [
     path('comptabilite/<int:pk>/modifier/', transaction_update, name='transaction_update'),
     path('comptabilite/<int:pk>/supprimer/', transaction_delete, name='transaction_delete'),
     path('comptes/', include('django.contrib.auth.urls')),
+    path('utilisateurs/', include('Comptes.urls')),
     path('admin/', admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

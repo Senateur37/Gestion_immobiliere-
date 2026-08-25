@@ -26,6 +26,17 @@ def dashboard(request):
 	active_leases = leases.filter(status='active')
 	pending_payments = payments.filter(status__in=['pending', 'overdue'])
 	open_maintenance = maintenance.filter(status__in=['submitted', 'in_progress'])
+	month_labels, month_income = [], []
+	today = timezone.now().date()
+	transactions = request.user.transactions.all()
+	for offset in range(5, -1, -1):
+		month_index = today.month - 1 - offset
+		month_start = date(today.year + month_index // 12, month_index % 12 + 1, 1)
+		month_end = date(month_start.year + (1 if month_start.month == 12 else 0), 1 if month_start.month == 12 else month_start.month + 1, 1)
+		month_transactions = transactions.filter(transaction_date__gte=month_start, transaction_date__lt=month_end)
+		month_labels.append(month_start.strftime('%m/%Y'))
+		month_income.append(float(month_transactions.filter(transaction_type='income').aggregate(total=Sum('amount'))['total'] or 0))
+
 	context = {
 		'property_count': properties.count(),
 		'unit_count': units.count(),
@@ -36,6 +47,8 @@ def dashboard(request):
 		'pending_amount': pending_payments.aggregate(total=Sum('amount'))['total'] or 0,
 		'monthly_revenue': active_leases.aggregate(total=Sum('rent_amount'))['total'] or 0,
 		'recent_properties': properties[:6],
+		'month_labels': month_labels,
+		'month_income': month_income,
 	}
 	return render(request, 'dashboard.html', context)
 
@@ -53,6 +66,13 @@ def payment_list(request):
 		'status': status,
 		'status_choices': Payment.STATUS_CHOICES,
 	})
+@login_required
+def payment_receipt(request, pk):
+	payment = get_object_or_404(Payment, pk=pk, lease__unit__property__owner=request.user)
+	if payment.status != 'paid':
+		messages.error(request, 'La quittance n\'est disponible que pour les paiements réglés.')
+		return redirect('payment_list')
+	return render(request, 'payments/receipt_pdf.html', {'payment': payment})
 
 
 @login_required

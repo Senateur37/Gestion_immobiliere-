@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres de l'application | {{ site_settings.app_name }}{% endblock %}
+
+{% block eyebrow %}Administration{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+  <div>
+    <h1>Personnalisation de la plateforme</h1>
+    <p class="intro">Modifiez l'identité visuelle de votre application (Marque Blanche).</p>
+  </div>
+</div>
+
+<div class="premium-card" style="max-width: 600px; margin: 0 auto; padding: 40px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="display: flex; flex-direction: column; gap: 25px;">
+      
+      <!-- Nom de l'application -->
+      <div class="field">
+        <label for="{{ form.app_name.id_for_label }}" style="font-size: 1.1rem; color: var(--primary);">{{ form.app_name.label }}</label>
+        {{ form.app_name }}
+        {% for error in form.app_name.errors %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endfor %}
+      </div>
+
+      <!-- Couleur principale -->
+      <div class="field">
+        <label for="{{ form.primary_color.id_for_label }}" style="font-size: 1.1rem; color: var(--primary);">{{ form.primary_color.label }}</label>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          {{ form.primary_color }}
+          <span style="color: var(--text-muted); font-size: 0.9rem;">Cliquez pour choisir une couleur</span>
+        </div>
+        {% for error in form.primary_color.errors %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endfor %}
+      </div>
+
+      <!-- Logo -->
+      <div class="field" style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <label for="{{ form.logo.id_for_label }}" style="font-size: 1.1rem; color: var(--primary);">{{ form.logo.label }}</label>
+        {% if site_settings.logo %}
+          <div style="margin: 10px 0; background: var(--bg-app); padding: 15px; border-radius: 12px; display: inline-block;">
+            <img src="{{ site_settings.logo.url }}" alt="Logo actuel" style="max-height: 80px;">
+          </div>
+        {% endif %}
+        {{ form.logo }}
+        {% for error in form.logo.errors %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endfor %}
+      </div>
+
+    </div>
+    
+    <div class="form-actions" style="margin-top: 40px;">
+      <a class="button" href="{% url 'dashboard' %}">Annuler</a>
+      <button type="submit" class="primary" style="padding: 12px 30px; font-size: 1.05rem;">Enregistrer</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

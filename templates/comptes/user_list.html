@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion des Utilisateurs - ImmoPilot Premium{% endblock %}
+{% block eyebrow %}Administration{% endblock %}
+{% block header_meta %}{{ users.count }} utilisateur(s){% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <h2>Utilisateurs et Rôles</h2>
+    <div class="actions">
+        <a href="{% url 'user_create' %}" class="btn btn-primary">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+            Ajouter un utilisateur
+        </a>
+    </div>
+</div>
+
+<div class="premium-card">
+    {% if users %}
+    <table>
+        <thead>
+            <tr>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Date de création</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                    {% if user.phone %}<span class="sub">{{ user.phone }}</span>{% endif %}
+                </td>
+                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.role == 'admin' %}<span class="badge" style="background:#fdf1f1;color:#af5757">Admin</span>
+                    {% elif user.role == 'owner' %}<span class="badge" style="background:#edf5ff;color:#2a5f9b">Propriétaire</span>
+                    {% elif user.role == 'agent' %}<span class="badge" style="background:#fff7dc;color:#a26d10">Agent</span>
+                    {% else %}<span class="badge occupied">Locataire</span>{% endif %}
+                </td>
+                <td>{{ user.created_at|date:"d M Y" }}</td>
+                <td>
+                    <div class="actions" style="display:flex;gap:5px;">
+                        <a href="{% url 'user_update' user.pk %}" class="button" style="padding:6px 10px;font-size:0.8rem;">Modifier</a>
+                        <a href="{% url 'user_delete' user.pk %}" class="button" style="padding:6px 10px;font-size:0.8rem;color:var(--danger);border-color:var(--danger)">Supprimer</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-box">
+        <h2>Aucun utilisateur trouvé</h2>
+        <p class="empty">Ajoutez des locataires ou des agents pour commencer.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

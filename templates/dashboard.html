@@ -63,13 +63,42 @@
   </section>
 
   <section class="panel">
-    <div class="panel-header"><h2>Accès rapides</h2></div>
-    <div class="quick-links">
-      <a href="{% url 'property_create' %}"><span><strong>Ajouter un bien</strong><small>Créer une fiche propriété</small></span><b>+</b></a>
-      <a href="{% url 'lease_create' %}"><span><strong>Nouveau bail</strong><small>Enregistrer un contrat locatif</small></span><b>+</b></a>
-      <a href="{% url 'maintenance_create' %}"><span><strong>Nouvelle demande</strong><small>Déclarer une intervention</small></span><b>+</b></a>
-      <a href="{% url 'document_create' %}"><span><strong>Ajouter un document</strong><small>Classer une pièce importante</small></span><b>+</b></a>
+    <div class="panel-header"><h2>Évolution des revenus (6 mois)</h2></div>
+    <div style="position: relative; height:250px; width:100%">
+      <canvas id="revenueChart"></canvas>
     </div>
   </section>
 </div>
+
+<!-- Scripts pour Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ month_labels|safe }},
+        datasets: [{
+          label: 'Revenus (FCFA)',
+          data: {{ month_income|safe }},
+          borderColor: '#0f9c95',
+          backgroundColor: 'rgba(15, 156, 149, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}

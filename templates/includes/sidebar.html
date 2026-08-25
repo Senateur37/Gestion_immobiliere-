@@ -1,20 +1,71 @@
 <aside class="app-sidebar">
-<a class="side-brand" href="{% url 'dashboard' %}">Immo<span>Pilot</span></a>
+<a class="side-brand" href="{% url 'dashboard' %}">
+  {% if site_settings.logo %}
+    <img src="{{ site_settings.logo.url }}" alt="Logo" style="max-height: 40px; margin-right: 10px; vertical-align: middle;">
+  {% endif %}
+  {{ site_settings.app_name }}
+</a>
 <div class="side-label">Pilotage</div>
 <nav>
-<a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Tableau de bord</a>
-<a class="{% if '/biens/unites' not in request.path and '/biens/' in request.path %}active{% endif %}" href="{% url 'property_list' %}">Biens immobiliers</a>
-<a class="{% if '/biens/unites' in request.path %}active{% endif %}" href="{% url 'unit_list' %}">Unités locatives</a>
-<a class="{% if '/baux/' in request.path %}active{% endif %}" href="{% url 'lease_list' %}">Baux</a>
-<a class="{% if '/baux/crm/' in request.path %}active{% endif %}" href="{% url 'tenant_crm' %}">Locataires</a>
+<a class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v8H4z"></path><path d="M4 16h6v4H4z"></path><path d="M14 12h6v8h-6z"></path><path d="M14 4h6v4h-6z"></path></svg>
+  Tableau de bord
+</a>
+<a class="{% if '/biens/unites' not in request.path and '/biens/' in request.path %}active{% endif %}" href="{% url 'property_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M9 8h1"></path><path d="M9 12h1"></path><path d="M9 16h1"></path><path d="M14 8h1"></path><path d="M14 12h1"></path><path d="M14 16h1"></path><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path></svg>
+  Biens immobiliers
+</a>
+<a class="{% if '/biens/unites' in request.path %}active{% endif %}" href="{% url 'unit_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l5 5v7h-5v-4H4v4H1v-7l5 -5m1 1l7 -7l9 9h-4v6h-4v-6h-4v6h-4v-6"></path></svg>
+  Unités locatives
+</a>
+<a class="{% if '/baux/' in request.path %}active{% endif %}" href="{% url 'lease_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path><path d="M9 15h6"></path><path d="M9 11h6"></path></svg>
+  Baux
+</a>
+<a class="{% if '/baux/crm/' in request.path %}active{% endif %}" href="{% url 'tenant_crm' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"></path></svg>
+  Locataires
+</a>
 </nav>
 <div class="side-label">Opérations</div>
 <nav>
-<a class="{% if '/rapports/' in request.path %}active{% endif %}" href="{% url 'business_report' %}">Rapports</a>
-<a class="{% if '/paiements/' in request.path %}active{% endif %}" href="{% url 'payment_list' %}">Paiements</a>
-<a class="{% if '/maintenance/' in request.path %}active{% endif %}" href="{% url 'maintenance_list' %}">Maintenance</a>
-<a class="{% if '/documents/' in request.path %}active{% endif %}" href="{% url 'document_list' %}">Documents</a>
-<a class="{% if '/comptabilite/' in request.path %}active{% endif %}" href="{% url 'transaction_list' %}">Comptabilité</a>
+<a class="{% if '/rapports/' in request.path %}active{% endif %}" href="{% url 'business_report' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M20 18v3"></path><path d="M16 16v5"></path><path d="M12 13v8"></path><path d="M8 16v5"></path><path d="M3 11c6 0 5 -5 9 -5s3 5 9 5"></path></svg>
+  Rapports
+</a>
+<a class="{% if '/paiements/' in request.path %}active{% endif %}" href="{% url 'payment_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12"></path><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"></path></svg>
+  Paiements
+</a>
+<a class="{% if '/maintenance/' in request.path %}active{% endif %}" href="{% url 'maintenance_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5"></path></svg>
+  Maintenance
+</a>
+<a class="{% if '/documents/' in request.path %}active{% endif %}" href="{% url 'document_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path></svg>
+  Documents
+</a>
+<a class="{% if '/comptabilite/' in request.path %}active{% endif %}" href="{% url 'transaction_list' %}">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8v-2a2 2 0 0 1 2 -2h2"></path><path d="M4 16v2a2 2 0 0 0 2 2h2"></path><path d="M16 4h2a2 2 0 0 1 2 2v2"></path><path d="M16 20h2a2 2 0 0 0 2 -2v-2"></path><path d="M9 10v4h4"></path><path d="M13 10l-4 4"></path></svg>
+  Comptabilité
+</a>
 </nav>
+
+{% if request.user.is_authenticated %}
+  {% if request.user.role == 'admin' or request.user.role == 'owner' %}
+  <div class="side-label">Administration</div>
+  <nav>
+  <a class="{% if '/utilisateurs/' in request.path %}active{% endif %}" href="{% url 'user_list' %}">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path></svg>
+    Utilisateurs
+  </a>
+  <a class="{% if '/parametres/' in request.path %}active{% endif %}" href="{% url 'site_settings' %}">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"></path><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path></svg>
+    Paramètres
+  </a>
+  </nav>
+  {% endif %}
+{% endif %}
 <div class="account"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.get_role_display }}</span><br><a href="{% url 'logout' %}">Se déconnecter</a></div>
 </aside>

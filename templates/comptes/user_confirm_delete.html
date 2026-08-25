@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer l'utilisateur - ImmoPilot Premium{% endblock %}
+{% block eyebrow %}Administration{% endblock %}
+
+{% block content %}
+<div class="form-panel" style="max-width: 600px; margin: 0 auto;">
+    <div class="notice" style="background:#fff0ee; color:#c15b4b; border-color:#fad4ce;">
+        <strong>Attention !</strong> Cette action est irréversible.
+    </div>
+    
+    <h2 style="margin-bottom: 20px;">Êtes-vous sûr de vouloir supprimer l'utilisateur "{{ object.get_full_name|default:object.username }}" ?</h2>
+    
+    <p>Cette suppression supprimera également tous les accès de cet utilisateur à la plateforme.</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions" style="margin-top: 30px;">
+            <a href="{% url 'user_list' %}" class="button">Annuler</a>
+            <button type="submit" class="btn" style="background:var(--danger); color:white;">Confirmer la suppression</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

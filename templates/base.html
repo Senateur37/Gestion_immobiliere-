@@ -4,134 +4,89 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#102c46">
-<title>{% block title %}ImmoPilot Premium{% endblock %}</title>
+<title>{% block title %}{{ site_settings.app_name }} Premium{% endblock %}</title>
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/design_system.css' %}">
 <style>
-/* CSS Hérité en cours de migration vers design_system.css */
-:root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,sans-serif;--ink:#0f172a;--muted:#63748a;--line:#e5edf3;--navy:#0d1d2c;--navy-2:#183b57;--teal:#0f9c95;--teal-strong:#0b7a73;--teal-soft:#dffaf5;--gold:#f2b85c;--rose:#e86d6d;--bg:#edf4f7;--card:#ffffff;--shadow:0 24px 50px rgba(12,27,41,.09)}
-*{box-sizing:border-box}
-html {scroll-behavior:smooth}
-/* On retire body car géré par design_system.css */
-a{color:inherit;text-decoration:none}
-.shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr;max-width:1600px;margin:0 auto}
-aside.app-sidebar{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-2) 100%);color:#dfeaf5;padding:28px 18px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid rgba(255,255,255,.06)}
-.side-brand{color:#fff;font-size:1.18rem;font-weight:800;letter-spacing:.02em;padding:0 12px 34px;display:block}
-.side-brand span{color:#6fe7dc}
-.side-label{color:#85a1b5;font-size:.72rem;font-weight:800;letter-spacing:.12em;padding:18px 12px 7px;text-transform:uppercase}
-.app-sidebar nav{display:grid;gap:8px}
-.app-sidebar nav a{padding:12px 12px;border-radius:10px;font-size:.92rem;color:#dfeaf5;transition:all .2s ease}
-.app-sidebar nav a.active,.app-sidebar nav a:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateX(2px)}
-.account{border-top:1px solid rgba(255,255,255,.12);margin-top:auto;padding-top:18px;font-size:.84rem}
-.account strong{color:#fff;display:block;margin-bottom:5px}
-.account span{color:#9cb2c4}
-.account a{color:#a2f0e7;display:inline-block;margin-top:6px}
-main{min-width:0;background:transparent}
-header.top-header{align-items:center;background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-bottom:1px solid rgba(129,153,175,.25);display:flex;justify-content:space-between;padding:22px 4vw;position:sticky;top:0;z-index:10}
-.eyebrow{color:var(--teal-strong);font-size:.74rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.header-meta{color:var(--muted);font-size:.84rem}
-.content{max-width:1360px;margin:0 auto;padding:38px 4vw 80px}
-h1{font-size:clamp(2rem,3vw,2.7rem);letter-spacing:-.05em;margin:7px 0 10px}
-h2{font-size:1.06rem;margin:0}
-.intro{color:var(--muted);margin:0 0 24px;line-height:1.6}
-.hero-panel{background:linear-gradient(135deg,#ffffff 0%,#f4fbf9 100%);border:1px solid rgba(15,156,149,.15);border-radius:18px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;gap:20px;padding:28px 30px;margin-bottom:22px}
-.hero-panel h1{margin-bottom:6px}
-.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
-.floating-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px}
-.mini-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 12px 28px rgba(15,31,48,.04)}
-.mini-card .label{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
-.mini-card strong{display:block;font-size:1.45rem;letter-spacing:-.04em;margin-top:8px}
-.mini-card small{color:var(--muted);display:block;margin-top:4px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.stat,.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 28px rgba(15,31,48,.04)}
-.stat{min-height:130px;padding:20px 22px;position:relative;overflow:hidden}
-.stat::after{background:var(--accent,var(--teal));content:'';height:4px;left:22px;position:absolute;right:22px;top:0;border-radius:999px}
-.stat-label{color:var(--muted);font-size:.82rem}
-.stat strong{color:var(--ink);display:block;font-size:1.85rem;letter-spacing:-.05em;margin-top:14px}
-.stat strong small{font-size:1rem;color:var(--muted)}
-.stat-meta{color:var(--muted);font-size:.75rem;margin-top:5px}
-.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.8fr);gap:18px;margin-top:22px}
-.panel{padding:23px}
-.panel-header{align-items:center;display:flex;justify-content:space-between;margin-bottom:20px}
-.panel-header span{color:var(--muted);font-size:.77rem}
-.toolbar{align-items:center;display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:20px}
-.filters{display:flex;gap:8px;overflow-x:auto}
-.filters a{border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.8rem;padding:8px 13px;white-space:nowrap;transition:all .2s ease}
-.filters a.active,.filters a:hover{background:var(--teal-soft);border-color:#bfe8df;color:var(--teal-strong)}
-.search{background:#fff;border:1px solid var(--line);border-radius:10px;display:flex;max-width:430px;width:100%;box-shadow:0 8px 18px rgba(15,31,48,.02)}
-.search input{border:0;font:inherit;min-width:0;outline:0;padding:12px 14px;width:100%;background:transparent}
-.search button{background:none;border:0;border-left:1px solid var(--line);color:var(--teal-strong);cursor:pointer;font-weight:800;padding:0 16px}
-.primary,.button.primary{background:linear-gradient(135deg,var(--teal) 0%,var(--teal-strong) 100%);border:1px solid var(--teal);border-radius:10px;color:#fff;font-weight:800;padding:13px 17px;white-space:nowrap;display:inline-block;box-shadow:0 12px 24px rgba(13,122,115,.18)}
-.primary:hover,.button.primary:hover{filter:brightness(1.02)}
-.button{background:#fff;border:1px solid var(--line);border-radius:10px;color:var(--ink);font:inherit;font-weight:700;padding:12px 17px;display:inline-block;cursor:pointer;transition:all .2s ease}
-.button:hover{border-color:var(--teal);color:var(--teal)}
-.messages{background:#eafaf7;border:1px solid #cbece6;border-radius:10px;color:#0d786d;margin-bottom:18px;padding:12px 15px}
-table{border-collapse:collapse;width:100%}
-th,td{border-bottom:1px solid #edf2f6;font-size:.86rem;padding:14px 8px;text-align:left}
-th{color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
-tr:last-child td{border-bottom:0}
-.sub{color:var(--muted);display:block;font-size:.76rem;margin-top:3px}
-.name{font-weight:800}
-.amount{font-weight:800}
-.badge{background:#eafaf7;border-radius:999px;color:#0d786d;display:inline-block;font-size:.72rem;font-weight:800;padding:5px 9px}
-.badge.off,.badge.expired,.badge.terminated,.badge.cancelled,.badge.no{background:#fff0ee;color:#c15b4b}
-.badge.occupied{background:#edf5ff;color:#2a5f9b}
-.badge.maintenance,.badge.pending,.badge.overdue{background:#fff7dc;color:#a26d10}
-.badge.reserved{background:#fdf1f1;color:#af5757}
-.empty,.empty-box{color:var(--muted);font-size:.88rem}
-.empty-box{background:#fff;border:1px dashed #ccdbe3;border-radius:14px;padding:45px;text-align:center}
-.empty-box h2{color:var(--ink);margin-top:0}
-.grid-cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
-.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 26px rgba(16,44,70,.04);display:flex;flex-direction:column;min-height:220px;padding:21px;transition:transform .2s ease, box-shadow .2s ease}
-.card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(16,44,70,.08)}
-.card-top{align-items:flex-start;display:flex;justify-content:space-between}
-.card h2{font-size:1.14rem;margin:0 0 7px}
-.card .meta{border-top:1px solid #edf0f2;color:var(--muted);display:flex;font-size:.78rem;gap:20px;margin-top:auto;padding-top:17px}
-.card .meta strong{color:var(--ink);display:block;font-size:1rem;margin-top:3px}
-.card .actions{display:flex;gap:8px;margin-top:17px}
-.card .actions a{border:1px solid var(--line);border-radius:8px;font-size:.78rem;font-weight:700;padding:9px 11px;background:#f9fbfc}
-.card .actions a:hover{border-color:var(--teal);color:var(--teal)}
-.quick-links{display:grid;gap:12px}
-.quick-links a{align-items:center;border:1px solid var(--line);border-radius:12px;display:flex;justify-content:space-between;padding:14px 15px;background:linear-gradient(180deg,#fff,#fafcfd)}
-.quick-links a:hover{border-color:#bfe8df;background:#f5fffd}
-.quick-links strong{font-size:1rem}
-.quick-links small{color:var(--muted);display:block;margin-top:3px}
-.notice{background:#eafaf7;border:1px solid #d0f0ea;border-radius:10px;color:#0d786d;margin-bottom:22px;padding:12px 14px}
-.summary{display:grid;gap:14px;grid-template-columns:repeat(3,minmax(0,1fr));margin:28px 0}
-.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 12px 20px rgba(15,31,48,.03)}
-.metric span{color:var(--muted);font-size:.8rem}
-.metric strong{display:block;font-size:1.45rem;margin-top:10px}
-.metric strong.income{color:#0d786d}
-.metric strong.expense{color:#c15b4b}
-.metric strong.net{color:#2a5f9b}
-.form-panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 32px rgba(15,31,48,.04);padding:30px}
-.form-grid{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr))}
-.field{display:flex;flex-direction:column;gap:7px}
-.field.full{grid-column:1/-1}
-.field label{font-size:.8rem;font-weight:700}
-.field-input{border:1px solid #d5dfe7;border-radius:10px;font:inherit;padding:11px 12px;width:100%;background:#fdfefe}
-.field-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(22,156,149,.14);outline:0}
-.field-textarea{resize:vertical}
-.field-checkbox{accent-color:var(--teal);height:18px;width:18px}
-.help{color:var(--muted);font-size:.75rem}
-.errorlist{color:#a45149;font-size:.78rem;list-style:none;margin:0;padding:0}
-.form-actions{border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;margin-top:26px;padding-top:22px}
-@media (max-width:900px){.shell{grid-template-columns:1fr}.side-brand{padding:0 0 14px}.app-sidebar nav{display:flex;overflow-x:auto}.app-sidebar nav a{white-space:nowrap}.side-label{display:none}.account{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-panel{flex-direction:column;align-items:flex-start}.floating-row{grid-template-columns:1fr}}
-@media (max-width:620px){header.top-header{padding:17px 20px}.header-meta{display:none}.content{padding:29px 20px 45px}.stats,.dashboard-grid,.summary,.form-grid{grid-template-columns:1fr}.panel{padding:17px;overflow-x:auto}table{min-width:520px}.toolbar{align-items:stretch;flex-direction:column}.search{max-width:none}.form-actions{flex-direction:column-reverse}.button{text-align:center}.hero-actions{width:100%}.hero-actions .button,.hero-actions .primary{flex:1}}
+@media print {
+  .app-sidebar, header.top-header, .toolbar .actions, .form-actions, .button:not(.primary) { display: none !important; }
+  .shell { display: block; }
+  .content { padding: 0; margin: 0; }
+  body { background: white; color: black; }
+  .panel, .stat, .metric, .card, .premium-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+}
 {% block extra_style %}{% endblock %}
 </style>
+{% if site_settings.primary_color %}
+<style>
+  :root {
+    --primary: {{ site_settings.primary_color }};
+  }
+</style>
+{% endif %}
+<script>
+  // Prevent FOUC by setting theme early
+  if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+</script>
 {% block extra_head %}{% endblock %}
 </head>
 <body>
 <div class="shell">
 {% include "includes/sidebar.html" %}
 <main>
-<header class="top-header"><span class="eyebrow">{% block eyebrow %}Espace propriétaire{% endblock %}</span><span class="header-meta">{% block header_meta %}{% now "j F Y" %}{% endblock %}</span></header>
+<header class="top-header"><span class="eyebrow">{% block eyebrow %}Espace propriétaire{% endblock %}</span>      <div class="header-meta">
+        {% block header_meta %}{% now "j F Y" %}{% endblock %}
+        
+        <!-- Bouton Dark Mode -->
+        <button id="theme-toggle" class="theme-toggle" style="background:none; border:none; cursor:pointer; color:var(--text-muted); margin-left:15px; display:flex; align-items:center;">
+          <svg id="theme-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+
+        <!-- Icone de Notifications -->
+        <div class="notifications-dropdown" style="position:relative; margin-left:15px; cursor:pointer;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          {% if unread_notifications_count > 0 %}
+            <span style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; padding:2px 5px; font-size:10px; font-weight:bold;">{{ unread_notifications_count }}</span>
+          {% endif %}
+        </div>
+      </div></header>
 <div class="content">
 {% if messages %}{% for message in messages %}<div class="messages">{{ message }}</div>{% endfor %}{% endif %}
 {% block content %}{% endblock %}
 </div>
 </main>
 </div>
+
+<script>
+  // Dark Mode Toggle Logic
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  
+  function updateIcon(theme) {
+    if (theme === 'dark') {
+      themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>'; // Sun icon
+    } else {
+      themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'; // Moon icon
+    }
+  }
+
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  updateIcon(currentTheme);
+
+  themeToggle.addEventListener('click', () => {
+    let theme = document.documentElement.getAttribute('data-theme');
+    if (theme === 'dark') {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+      updateIcon('light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+      updateIcon('dark');
+    }
+  });
+</script>
 </body>
 </html>

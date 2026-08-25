@@ -4,10 +4,22 @@
 {% block content %}
 <h1>{{ page_title }}</h1>
 <p class="intro">Complétez les informations ci-dessous pour mettre à jour votre espace ImmoPilot.</p>
-<form class="form-panel" method="post"{% if has_file %} enctype="multipart/form-data"{% endif %}>{% csrf_token %}
-<div class="form-grid">
-{% for field in form %}<div class="field{% if field.name == 'description' or field.name == 'notes' %} full{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>{% endfor %}
+<div class="premium-card" style="max-width: 800px; margin: 0 auto; padding: 40px;">
+  <form method="post"{% if has_file %} enctype="multipart/form-data"{% endif %}>{% csrf_token %}
+  <div class="form-grid">
+  {% for field in form %}
+    <div class="field{% if field.name == 'description' or field.name == 'notes' %} full{% endif %}">
+      <label for="{{ field.id_for_label }}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 5px; display: block;">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+      {% for error in field.errors %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endfor %}
+    </div>
+  {% endfor %}
+  </div>
+  <div class="form-actions" style="margin-top: 40px;">
+    <a class="button" href="{% url back_url %}">Annuler</a>
+    <button class="button primary" style="padding: 12px 30px; font-size: 1.05rem;" type="submit">Enregistrer</button>
+  </div>
+  </form>
 </div>
-<div class="form-actions"><a class="button" href="{% url back_url %}">Annuler</a><button class="button primary" type="submit">Enregistrer</button></div>
-</form>
 {% endblock %}
