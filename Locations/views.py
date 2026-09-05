@@ -12,9 +12,7 @@ from Proprietes.models import Unit
 
 @login_required
 def lease_list(request):
-	leases = Lease.objects.filter(
-		unit__in=Unit.objects.all(),
-	).select_related('unit', 'unit__property', 'tenant')
+	leases = Lease.objects.select_related('unit', 'unit__property', 'tenant')
 	status = request.GET.get('status', '').strip()
 	if status:
 		leases = leases.filter(status=status)
@@ -27,7 +25,7 @@ def lease_list(request):
 
 @login_required
 def tenant_crm(request):
-	leases = Lease.objects.filter(unit__in=Unit.objects.all()).select_related('unit', 'unit__property', 'tenant')
+	leases = Lease.objects.all().select_related('unit', 'unit__property', 'tenant')
 	status = request.GET.get('status', '').strip()
 	if status:
 		leases = leases.filter(status=status)
@@ -58,7 +56,7 @@ def lease_create(request):
 
 @login_required
 def lease_update(request, pk):
-	lease = get_object_or_404(Lease, pk=pk, unit__in=Unit.objects.all())
+	lease = get_object_or_404(Lease, pk=pk)
 	form = LeaseForm(request.user, request.POST or None, instance=lease)
 	if request.method == 'POST' and form.is_valid():
 		form.save()
@@ -69,7 +67,7 @@ def lease_update(request, pk):
 
 @login_required
 def lease_delete(request, pk):
-	lease = get_object_or_404(Lease, pk=pk, unit__in=Unit.objects.all())
+	lease = get_object_or_404(Lease, pk=pk)
 	if request.method == 'POST':
 		lease.delete()
 		messages.success(request, f'Le bail {lease.lease_number} a été supprimé.')

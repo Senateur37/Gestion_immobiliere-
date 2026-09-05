@@ -1,13 +1,15 @@
 from django import forms
 from django.db.models import Q
 
+from core.forms import TenantModelForm
+
 from Comptes.models import User
 from Proprietes.models import Unit
 
 from .models import Lease
 
 
-class LeaseForm(forms.ModelForm):
+class LeaseForm(TenantModelForm):
     # Declare explicitement : sans cela, Django construit le queryset a
     # l'import du module, hors de toute organisation active. Le vrai
     # queryset est pose dans __init__.
@@ -24,10 +26,10 @@ class LeaseForm(forms.ModelForm):
         self.fields['unit'].queryset = Unit.objects.all()
         # Les locataires visibles sont ceux deja lies a un bail de
         # l'organisation, plus ceux qui ne sont rattaches a aucun bail
-        # (sans quoi aucun premier bail ne serait creable). Le perimetre
-        # vient des unites, qui portent l'organisation.
+        # (sans quoi aucun premier bail ne serait creable). Lease.objects
+        # etant filtre par organisation, la restriction est directe.
         self.fields['tenant'].queryset = User.objects.filter(
             role='tenant', is_active=True
         ).filter(
-            Q(leases__unit__in=Unit.objects.all()) | Q(leases__isnull=True)
+            Q(leases__in=Lease.objects.all()) | Q(leases__isnull=True)
         ).distinct()

@@ -159,3 +159,50 @@ class RequestScopeTests(TestCase):
         middleware(requete)
 
         self.assertIsNone(get_current_organization_id())
+
+
+class FormulairesTenantTests(TestCase):
+    """Aucun formulaire ne doit laisser choisir son organisation.
+
+    On verifie le contrat plutot qu'une liste de formulaires connus : les
+    formulaires ecrits demain sont couverts aussi.
+    """
+
+    def test_tout_formulaire_sur_un_modele_tenant_herite_de_TenantModelForm(self):
+        import importlib
+        import inspect
+
+        from django.apps import apps as django_apps
+        from django.forms import ModelForm
+
+        from .forms import TenantModelForm
+        from .models import TenantOwnedModel
+
+        fautifs = []
+        for config in django_apps.get_app_configs():
+            try:
+                module = importlib.import_module(f'{config.name}.forms')
+            except ModuleNotFoundError:
+                continue
+
+            for _, objet in inspect.getmembers(module, inspect.isclass):
+                if not issubclass(objet, ModelForm) or objet in (ModelForm, TenantModelForm):
+                    continue
+                if objet.__module__ != module.__name__:
+                    continue
+                modele = getattr(getattr(objet, '_meta', None), 'model', None)
+                if modele is None or not issubclass(modele, TenantOwnedModel):
+                    continue
+                expose = 'organization' in (objet._meta.fields or []) or (
+                    objet._meta.exclude is not None
+                    and 'organization' not in objet._meta.exclude
+                    and not issubclass(objet, TenantModelForm)
+                )
+                if expose:
+                    fautifs.append(f'{module.__name__}.{objet.__name__}')
+
+        self.assertEqual(
+            fautifs, [],
+            "Ces formulaires peuvent exposer le champ organisation : "
+            "faites-les heriter de core.forms.TenantModelForm.",
+        )
