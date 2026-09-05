@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'core',
     'identity',
     'organizations',
+    'finance',
     # API
     'rest_framework',
     'rest_framework_simplejwt',

@@ -21,24 +21,30 @@ from django.urls import include, path
 from Comptabilite.views import (
     business_report,
     dashboard,
-    payment_delete,
-    payment_list,
-    payment_receipt,
-    payment_update,
     transaction_create,
     transaction_delete,
     transaction_list,
     transaction_update,
+)
+from finance.views import (
+    charge_list,
+    lease_schedule,
+    payment_create,
+    payment_history,
+    payment_receipt,
 )
 
 urlpatterns = [
     path('', dashboard, name='dashboard'),
     path('rapports/', business_report, name='business_report'),
     path('biens/', include('Proprietes.urls')),
-    path('paiements/', payment_list, name='payment_list'),
+    # Finance : les echeances (ce qui est du) et les encaissements (ce qui
+    # a ete recu) sont deux ecrans distincts, comme les deux modeles.
+    path('paiements/', charge_list, name='payment_list'),
+    path('paiements/encaissements/', payment_history, name='payment_history'),
+    path('paiements/encaisser/', payment_create, name='payment_create'),
     path('paiements/<int:pk>/quittance/', payment_receipt, name='payment_receipt'),
-    path('paiements/<int:pk>/modifier/', payment_update, name='payment_update'),
-    path('paiements/<int:pk>/supprimer/', payment_delete, name='payment_delete'),
+    path('baux/<int:pk>/echeancier/', lease_schedule, name='lease_schedule'),
     path('baux/', include('Locations.urls')),
     path('maintenance/', include('Maintenance.urls')),
     path('documents/', include('Documents.urls')),
