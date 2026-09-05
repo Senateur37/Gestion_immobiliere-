@@ -39,20 +39,30 @@
   --font-sans: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Dark Mode Variables */
+/* Dark Mode Variables - Ardoise nuit */
 [data-theme="dark"] {
-  --bg-app: #09090b;
-  --bg-sidebar: #050505;
-  --bg-card: #18181b;
-  
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
-  --text-sidebar: #a1a1aa;
-  --text-sidebar-hover: #fafafa;
-  
-  --border-color: #27272a;
-  
-  --glass-bg: rgba(24, 24, 27, 0.85);
+  --bg-app: #111c2e;
+  --bg-sidebar: #0b1424;
+  --bg-card: #1a2740;
+
+  /* Repli seulement : si une couleur de marque est definie dans
+     Parametres du site, base.html l'injecte dans :root apres ce fichier
+     et elle prime sur les deux themes. */
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --primary-glow: rgba(56, 189, 248, 0.35);
+
+  --accent: #2dd4bf;
+  --accent-glow: rgba(45, 212, 191, 0.35);
+
+  --text-main: #e6edf7;
+  --text-muted: #93a4bf;
+  --text-sidebar: #93a4bf;
+  --text-sidebar-hover: #f1f5f9;
+
+  --border-color: #2c3d5c;
+
+  --glass-bg: rgba(26, 39, 64, 0.85);
   --glass-border: rgba(255, 255, 255, 0.1);
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);

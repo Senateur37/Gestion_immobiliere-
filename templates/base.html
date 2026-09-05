@@ -25,8 +25,10 @@
 </style>
 {% endif %}
 <script>
-  // Prevent FOUC by setting theme early
-  if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  // Prevent FOUC by setting theme early.
+  // Le clair est le theme par defaut : on ne passe en sombre que si
+  // l'utilisateur l'a explicitement choisi via le bouton de bascule.
+  if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 </script>
