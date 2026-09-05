@@ -46,6 +46,9 @@ urlpatterns = [
     path('comptabilite/ajouter/', transaction_create, name='transaction_create'),
     path('comptabilite/<int:pk>/modifier/', transaction_update, name='transaction_update'),
     path('comptabilite/<int:pk>/supprimer/', transaction_delete, name='transaction_delete'),
+    # API v1 : le nouveau front consomme ces routes pendant que
+    # l'interface Django continue de servir les ecrans existants.
+    path('api/v1/', include('api.v1.urls')),
     path('comptes/', include('django.contrib.auth.urls')),
     path('utilisateurs/', include('Comptes.urls')),
     path('admin/', admin.site.urls),
