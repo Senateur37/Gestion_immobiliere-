@@ -136,6 +136,11 @@ Un versement peut solder plusieurs échéances ; une échéance peut être sold�
 par plusieurs versements. Le statut d'une échéance n'est jamais saisi : il
 découle de ses imputations.
 
+**Le compte encaisseur est obligatoire.** Sans lui, la somme n'entre dans
+aucune trésorerie et ne produit aucune écriture : elle serait enregistrée
+nulle part. Le service refuse la saisie (`compte_required`) et le formulaire
+la rejette avant envoi.
+
 Le passage de la finance à la comptabilité n'est pas un appel direct. Le
 service financier crédite un compte ; `django-comptes` émet
 `mouvement_valide` après commit ; `comptabilite_ohada` écoute ce signal et
@@ -200,7 +205,20 @@ encaisse, il ne clôture pas.
 
 ---
 
-## 7. Ce qui reste
+## 7. Une régularisation en attente
+
+Deux encaissements créés avant l'intégration comptable (300 000 FCFA) ont été
+rattachés à la caisse par la migration `finance/0003`, **sans mouvement de
+trésorerie ni écriture** : une migration n'a pas à inventer des opérations
+financières.
+
+Le solde de la caisse ne reflète donc pas ces deux versements. Décider s'il
+faut les régulariser — et à quelle date de valeur — est une décision métier,
+pas technique.
+
+---
+
+## 8. Ce qui reste
 
 - Rattacher `Maintenance`, `Documents` et `Transaction` à l'organisation.
 - Supprimer l'app `Paiements`, dont plus aucune vue ne se sert (tables vides).

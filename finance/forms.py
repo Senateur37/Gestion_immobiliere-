@@ -36,6 +36,7 @@ class PaymentForm(TenantModelForm):
         ).exclude(status='draft')
         self.fields['amount'].label = 'Montant recu'
         self.fields['compte'].label = 'Compte encaisseur'
+        self.fields['compte'].required = True
         self.fields['compte'].help_text = (
             "Caisse, banque ou compte mobile. C'est ce choix qui produit "
             "l'ecriture comptable."

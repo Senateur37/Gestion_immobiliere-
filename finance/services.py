@@ -213,9 +213,6 @@ def _porter_au_compte(payment, user=None):
     La cle d'idempotence est la reference de l'encaissement : rejouer
     l'operation ne peut pas crediter le compte deux fois.
     """
-    if payment.compte_id is None:
-        return None
-
     from comptes.services.mouvement_service import MouvementCompteService
 
     return MouvementCompteService.encaisser(
@@ -241,6 +238,14 @@ def record_payment(*, lease, amount, payment_date, method, reference=None,
     amount = Decimal(amount)
     if amount <= 0:
         raise DomainError("Le montant recu doit etre positif.", code='invalid_amount')
+
+    # Sans compte encaisseur, la somme n'entre dans aucune tresorerie et ne
+    # produit aucune ecriture : elle serait enregistree nulle part.
+    if compte is None:
+        raise DomainError(
+            "Indiquez le compte sur lequel la somme a ete versee.",
+            code='compte_required',
+        )
 
     reference = reference or _reference_suivante(lease.organization_id, payment_date)
 

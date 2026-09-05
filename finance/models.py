@@ -157,8 +157,6 @@ class Payment(TenantOwnedModel):
         on_delete=models.PROTECT,
         related_name='encaissements_loyers',
         verbose_name="Compte encaisseur",
-        null=True,
-        blank=True,
         help_text="Caisse, banque ou compte mobile ou la somme a ete versee.",
     )
     notes = models.TextField(blank=True, verbose_name="Notes")

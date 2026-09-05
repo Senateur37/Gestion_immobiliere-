@@ -56,6 +56,17 @@ class FinanceTestCase(TestCase):
             rent_amount=Decimal('100000'),
             deposit_amount=Decimal('200000'),
         )
+        from comptes.models import Compte
+
+        self.caisse = Compte.objects.create(
+            code='CAISSE-SOCLE',
+            nom='Caisse de test',
+            type='CAISSE',
+            solde_initial=Decimal('0'),
+            solde_actuel=Decimal('0'),
+            compte_comptable_code='571',
+        )
+
         self.bail = Lease.objects.create(
             unit=self.unite,
             tenant=self.locataire,
@@ -131,8 +142,7 @@ class PaiementPartielTests(FinanceTestCase):
             lease=self.bail,
             amount=Decimal('60000'),
             payment_date=date(2026, 1, 5),
-            method=Payment.METHOD_ORANGE_MONEY,
-        )
+            method=Payment.METHOD_ORANGE_MONEY, compte=self.caisse)
 
         self.janvier.refresh_from_db()
         self.assertEqual(self.janvier.status, RentCharge.STATUS_PARTIAL)
@@ -141,12 +151,10 @@ class PaiementPartielTests(FinanceTestCase):
     def test_le_complement_solde_l_echeance(self):
         record_payment(
             lease=self.bail, amount=Decimal('60000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
         record_payment(
             lease=self.bail, amount=Decimal('40000'),
-            payment_date=date(2026, 1, 20), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 20), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.janvier.refresh_from_db()
         self.assertEqual(self.janvier.status, RentCharge.STATUS_PAID)
@@ -155,8 +163,7 @@ class PaiementPartielTests(FinanceTestCase):
     def test_un_versement_couvrant_deux_mois_solde_les_deux(self):
         record_payment(
             lease=self.bail, amount=Decimal('200000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_BANK,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_BANK, compte=self.caisse)
 
         fevrier = RentCharge.objects.get(period_start=date(2026, 2, 1))
         self.janvier.refresh_from_db()
@@ -166,8 +173,7 @@ class PaiementPartielTests(FinanceTestCase):
     def test_l_imputation_commence_par_l_echeance_la_plus_ancienne(self):
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 3, 1), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 3, 1), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.janvier.refresh_from_db()
         fevrier = RentCharge.objects.get(period_start=date(2026, 2, 1))
@@ -178,8 +184,7 @@ class PaiementPartielTests(FinanceTestCase):
         """Un locataire verse plus que tout ce qu'il doit sur l'annee."""
         paiement = record_payment(
             lease=self.bail, amount=Decimal('1300000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_BANK,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_BANK, compte=self.caisse)
 
         self.assertEqual(paiement.amount_allocated, Decimal('1200000'))
         self.assertEqual(paiement.amount_unallocated, Decimal('100000'))
@@ -191,8 +196,7 @@ class PaiementPartielTests(FinanceTestCase):
         paiement = record_payment(
             lease=self.bail, amount=Decimal('100000'),
             payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-            auto_allocate=False,
-        )
+            auto_allocate=False, compte=self.caisse)
 
         self.assertEqual(paiement.amount_allocated, Decimal('0'))
         self.janvier.refresh_from_db()
@@ -207,8 +211,7 @@ class GardeFousDeLImputationTests(FinanceTestCase):
         self.paiement = record_payment(
             lease=self.bail, amount=Decimal('50000'),
             payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-            auto_allocate=False,
-        )
+            auto_allocate=False, compte=self.caisse)
 
     def test_on_ne_peut_pas_imputer_plus_que_l_encaissement(self):
         with self.assertRaises(DomainError) as erreur:
@@ -219,8 +222,7 @@ class GardeFousDeLImputationTests(FinanceTestCase):
         gros_paiement = record_payment(
             lease=self.bail, amount=Decimal('500000'),
             payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-            auto_allocate=False,
-        )
+            auto_allocate=False, compte=self.caisse)
         with self.assertRaises(DomainError) as erreur:
             allocate_payment(payment=gros_paiement, rent_charge=self.janvier, amount=Decimal('150000'))
         self.assertEqual(erreur.exception.code, 'overpaying_charge')
@@ -251,8 +253,7 @@ class GardeFousDeLImputationTests(FinanceTestCase):
     def test_une_echeance_deja_payee_ne_peut_pas_etre_annulee(self):
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
         self.janvier.refresh_from_db()
 
         with self.assertRaises(DomainError) as erreur:
@@ -271,8 +272,7 @@ class SoldeEtRetardsTests(FinanceTestCase):
     def test_le_solde_diminue_des_versements(self):
         record_payment(
             lease=self.bail, amount=Decimal('250000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_MOOV_MONEY,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_MOOV_MONEY, compte=self.caisse)
         self.assertEqual(lease_balance(self.bail), Decimal('950000'))
 
     def test_une_echeance_annulee_sort_du_solde(self):
@@ -290,8 +290,7 @@ class SoldeEtRetardsTests(FinanceTestCase):
     def test_une_echeance_payee_n_est_plus_en_retard(self):
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
         retards = overdue_charges(organization=self.organisation, today=date(2026, 3, 15))
 
         self.assertEqual(retards.count(), 2)
@@ -305,12 +304,10 @@ class ReferenceTests(FinanceTestCase):
     def test_les_references_se_suivent_dans_le_mois(self):
         premier = record_payment(
             lease=self.bail, amount=Decimal('10000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
         second = record_payment(
             lease=self.bail, amount=Decimal('10000'),
-            payment_date=date(2026, 1, 6), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 6), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.assertEqual(premier.reference, 'PAY-202601-0001')
         self.assertEqual(second.reference, 'PAY-202601-0002')
@@ -318,13 +315,11 @@ class ReferenceTests(FinanceTestCase):
     def test_une_reference_deja_prise_est_refusee(self):
         record_payment(
             lease=self.bail, amount=Decimal('10000'), payment_date=date(2026, 1, 5),
-            method=Payment.METHOD_CASH, reference='RECU-1',
-        )
+            method=Payment.METHOD_CASH, reference='RECU-1', compte=self.caisse)
         with self.assertRaises(DomainError) as erreur:
             record_payment(
                 lease=self.bail, amount=Decimal('10000'), payment_date=date(2026, 1, 6),
-                method=Payment.METHOD_CASH, reference='RECU-1',
-            )
+                method=Payment.METHOD_CASH, reference='RECU-1', compte=self.caisse)
         self.assertEqual(erreur.exception.code, 'duplicate_reference')
 
 
@@ -345,8 +340,7 @@ class IsolationFinanceTests(FinanceTestCase):
     def test_une_autre_organisation_ne_voit_pas_les_encaissements(self):
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
         with organization_context(self.agence_b):
             self.assertEqual(Payment.objects.count(), 0)
 
@@ -371,8 +365,7 @@ class EvenementsTests(FinanceTestCase):
 
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.assertEqual(len(self.recus), 1)
         self.assertEqual(self.recus[0].amount, Decimal('100000'))
@@ -382,8 +375,7 @@ class EvenementsTests(FinanceTestCase):
 
         record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.assertEqual(len(self.recus), 1)
 
@@ -396,8 +388,7 @@ class EvenementsTests(FinanceTestCase):
 
         paiement = record_payment(
             lease=self.bail, amount=Decimal('100000'),
-            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH,
-        )
+            payment_date=date(2026, 1, 5), method=Payment.METHOD_CASH, compte=self.caisse)
 
         self.assertIsNotNone(paiement.pk)
         self.assertTrue(Payment.objects.filter(pk=paiement.pk).exists())
@@ -416,7 +407,6 @@ class PontComptableTests(FinanceTestCase):
         generate_rent_schedule(lease=self.bail)
 
         from comptabilite_ohada.services.initialisation_service import InitialisationService
-        from comptes.models import Compte
 
         InitialisationService.charger_plan_comptable()
         InitialisationService.initialiser_journaux()
@@ -427,14 +417,6 @@ class PontComptableTests(FinanceTestCase):
             date_debut=date(2026, 1, 1), date_fin=date(2026, 12, 31)
         )
 
-        self.caisse = Compte.objects.create(
-            code='CAISSE-TEST',
-            nom='Caisse de test',
-            type='CAISSE',
-            solde_initial=Decimal('0'),
-            solde_actuel=Decimal('0'),
-            compte_comptable_code='571',
-        )
 
     def test_un_encaissement_credite_le_compte(self):
         record_payment(
@@ -480,13 +462,15 @@ class PontComptableTests(FinanceTestCase):
         self.assertEqual(mouvements['571'], (Decimal('100000'), Decimal('0')))
         self.assertEqual(mouvements['706'], (Decimal('0'), Decimal('100000')))
 
-    def test_un_encaissement_sans_compte_reste_possible(self):
-        """La saisie sans compte ne doit pas bloquer, le temps de la reprise."""
-        paiement = record_payment(
-            lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
-            method=Payment.METHOD_CASH,
-        )
-        self.assertIsNone(paiement.compte_id)
+    def test_un_encaissement_sans_compte_est_refuse(self):
+        """Sans compte, la somme n'entre nulle part : on refuse la saisie."""
+        with self.assertRaises(DomainError) as erreur:
+            record_payment(
+                lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
+                method=Payment.METHOD_CASH,
+            )
+        self.assertEqual(erreur.exception.code, 'compte_required')
+        self.assertEqual(Payment.objects.count(), 0)
 
 
 class EquilibreComptableTests(FinanceTestCase):
