@@ -1,6 +1,9 @@
 """Resolution de l'organisation active a chaque requete."""
+from django.shortcuts import render
+
 from organizations.selectors import resolve_membership_for_request
 
+from .exceptions import NoActiveOrganization
 from .tenancy import request_scope, set_current_organization
 
 # En-tete permettant a un utilisateur membre de plusieurs organisations
@@ -53,3 +56,16 @@ class OrganizationMiddleware:
             request.organization = None
             activate_organization(request)
             return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        """Traduit l'absence d'organisation en page lisible.
+
+        Un utilisateur authentifie mais rattache a aucune organisation
+        atteindrait sinon une erreur 500 sur chaque ecran, sans rien
+        comprendre. L'API, elle, recoit un 409 via core.api.
+        """
+        if not isinstance(exception, NoActiveOrganization):
+            return None
+        if request.path.startswith('/api/'):
+            return None
+        return render(request, 'core/no_organization.html', status=409)

@@ -33,6 +33,16 @@ class TenantManager(models.Manager.from_queryset(TenantQuerySet)):
             return queryset
         return queryset.filter(organization_id=require_current_organization_id())
 
+    def none(self):
+        """Ensemble vide, sans exiger de contexte.
+
+        Un queryset vide ne divulgue rien : le refus d'organisation
+        active n'a pas lieu d'etre. C'est aussi l'idiome employe pour
+        declarer un ModelChoiceField, evalue a l'import du module,
+        donc bien avant qu'une requete n'ait pose de perimetre.
+        """
+        return super(models.Manager, self).get_queryset().none()
+
 
 class AllObjectsManager(models.Manager.from_queryset(TenantQuerySet)):
     """Manager non filtre, expose sous le nom `all_objects`.

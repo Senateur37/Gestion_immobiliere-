@@ -2,8 +2,17 @@
 from django.db import models
 from django.conf import settings
 
-class Property(models.Model):
-    """Bien immobilier (immeuble, maison, etc.)"""
+from core.models import TenantOwnedModel
+
+
+class Property(TenantOwnedModel):
+    """Bien immobilier (immeuble, maison, etc.).
+
+    Rattache a une organisation, qui porte l'isolation. Le champ `owner`
+    ne sert plus a cloisonner : il designe le proprietaire reel du bien,
+    ce qui permet a une agence de gerer le portefeuille de plusieurs
+    proprietaires distincts.
+    """
     PROPERTY_TYPE_CHOICES = [
         ('apartment', 'Appartement'),
         ('house', 'Maison'),
@@ -13,9 +22,13 @@ class Property(models.Model):
     ]
     
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
-        related_name='properties'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_properties',
+        verbose_name="Proprietaire du bien",
+        help_text="Proprietaire reel. L'acces est regi par l'organisation, pas par ce champ.",
     )
     name = models.CharField(max_length=200, verbose_name="Nom du bien")
     address = models.CharField(max_length=255, verbose_name="Adresse")
@@ -27,23 +40,26 @@ class Property(models.Model):
     year_built = models.IntegerField(null=True, blank=True, verbose_name="Année de construction")
     description = models.TextField(blank=True, verbose_name="Description")
     is_active = models.BooleanField(default=True, verbose_name="Actif")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
-    
+
     class Meta:
         db_table = 'properties_property'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['city', 'postal_code']),
-            models.Index(fields=['owner', 'is_active']),
+            models.Index(fields=['organization', 'is_active']),
         ]
     
     def __str__(self):
         return f"{self.name} - {self.city}"
 
 
-class Unit(models.Model):
-    """Unité locative (appartement, bureau, etc.)"""
+class Unit(TenantOwnedModel):
+    """Unite locative (appartement, bureau, etc.).
+
+    L'organisation est repetee ici plutot que deduite du bien : le
+    manager peut ainsi filtrer sans jointure, et une unite ne peut pas
+    se retrouver orpheline du perimetre de son bien.
+    """
     STATUS_CHOICES = [
         ('available', 'Disponible'),
         ('occupied', 'Occupé'),
@@ -67,9 +83,7 @@ class Unit(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available', verbose_name="Statut")
     available_from = models.DateField(null=True, blank=True, verbose_name="Disponible à partir de")
     description = models.TextField(blank=True, verbose_name="Description")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
-    
+
     class Meta:
         db_table = 'properties_unit'
         unique_together = [['property', 'unit_number']]
@@ -82,16 +96,15 @@ class Unit(models.Model):
         return f"{self.property.name} - Unité {self.unit_number}"
 
 
-class PropertyImage(models.Model):
-    """Photos des biens et unités"""
+class PropertyImage(TenantOwnedModel):
+    """Photos des biens et unites."""
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     image = models.ImageField(upload_to='properties/images/', verbose_name="Image")
     caption = models.CharField(max_length=200, blank=True, verbose_name="Légende")
     display_order = models.IntegerField(default=0, verbose_name="Ordre d'affichage")
     is_primary = models.BooleanField(default=False, verbose_name="Image principale")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
-    
+
     class Meta:
         db_table = 'properties_propertyimage'
         ordering = ['display_order']

@@ -5,12 +5,13 @@ from django.urls import reverse
 
 from .forms import MaintenanceRequestForm
 from .models import MaintenanceRequest
+from Proprietes.models import Unit
 
 
 @login_required
 def maintenance_list(request):
 	requests = MaintenanceRequest.objects.filter(
-		unit__property__owner=request.user,
+		unit__in=Unit.objects.all(),
 	).select_related('unit', 'unit__property', 'tenant', 'assigned_to')
 	status = request.GET.get('status', '').strip()
 	if status:
@@ -36,7 +37,7 @@ def maintenance_create(request):
 
 @login_required
 def maintenance_update(request, pk):
-	item = get_object_or_404(MaintenanceRequest, pk=pk, unit__property__owner=request.user)
+	item = get_object_or_404(MaintenanceRequest, pk=pk, unit__in=Unit.objects.all())
 	form = MaintenanceRequestForm(request.user, request.POST or None, instance=item)
 	if request.method == 'POST' and form.is_valid():
 		form.save()
@@ -47,7 +48,7 @@ def maintenance_update(request, pk):
 
 @login_required
 def maintenance_delete(request, pk):
-	item = get_object_or_404(MaintenanceRequest, pk=pk, unit__property__owner=request.user)
+	item = get_object_or_404(MaintenanceRequest, pk=pk, unit__in=Unit.objects.all())
 	if request.method == 'POST':
 		item.delete()
 		messages.success(request, 'La demande de maintenance a été supprimée.')

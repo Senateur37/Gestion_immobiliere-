@@ -4,6 +4,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from Comptes.models import User
+from core.tenancy import organization_context
+from organizations.services import create_organization
 from Locations.models import Lease
 from Paiements.models import Payment
 from Proprietes.models import Property
@@ -17,6 +19,18 @@ class DashboardTests(TestCase):
 			password='mot-de-passe-solide',
 			role='owner',
 		)
+		self.organization = create_organization(name='Agence Test', owner=self.user)
+		self._activer_organisation()
+
+	def _activer_organisation(self):
+		"""Pose le perimetre pour la duree du test.
+
+		Les vues le recoivent du middleware ; les creations d'objets faites
+		directement dans le test ont besoin qu'on le pose explicitement.
+		"""
+		contexte = organization_context(self.organization)
+		contexte.__enter__()
+		self.addCleanup(contexte.__exit__, None, None, None)
 
 	def test_dashboard_requires_authentication(self):
 		response = self.client.get(reverse('dashboard'))
@@ -93,6 +107,10 @@ class NavigationSmokeTests(TestCase):
 			password='mot-de-passe-solide',
 			role='owner',
 		)
+		self.organization = create_organization(name='Agence Ecrans', owner=self.user)
+		contexte = organization_context(self.organization)
+		contexte.__enter__()
+		self.addCleanup(contexte.__exit__, None, None, None)
 		self.client.force_login(self.user)
 
 	def test_all_authenticated_screens_render(self):
@@ -109,3 +127,26 @@ class NavigationSmokeTests(TestCase):
 			with self.subTest(url_name=url_name):
 				response = self.client.get(reverse(url_name))
 				self.assertEqual(response.status_code, 200)
+
+
+class UtilisateurSansOrganisationTests(TestCase):
+	"""Un compte sans organisation doit etre informe, pas casse."""
+
+	def setUp(self):
+		self.orphelin = User.objects.create_user(
+			username='orphelin',
+			password='mot-de-passe-solide',
+			role='owner',
+		)
+		self.client.force_login(self.orphelin)
+
+	def test_le_tableau_de_bord_explique_l_absence_d_organisation(self):
+		response = self.client.get(reverse('dashboard'))
+
+		self.assertEqual(response.status_code, 409)
+		self.assertContains(response, 'Aucune organisation', status_code=409)
+
+	def test_la_liste_des_biens_ne_provoque_pas_d_erreur_serveur(self):
+		response = self.client.get(reverse('property_list'))
+
+		self.assertEqual(response.status_code, 409)
