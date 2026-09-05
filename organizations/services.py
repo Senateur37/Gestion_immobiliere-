@@ -9,6 +9,7 @@ from django.db import transaction
 from core.exceptions import DomainError
 
 from .models import Membership, Organization
+from .tresorerie import synchroniser_permissions_tresorerie
 
 
 @transaction.atomic
@@ -44,12 +45,16 @@ def add_member(*, organization, user, role=Membership.ROLE_AGENT, is_default=Fal
     if is_default:
         Membership.objects.filter(user=user, is_default=True).update(is_default=False)
 
-    return Membership.objects.create(
+    membership = Membership.objects.create(
         organization=organization,
         user=user,
         role=role,
         is_default=is_default,
     )
+    # Un membre doit pouvoir travailler des son arrivee : ses permissions
+    # de tresorerie decoulent de son role.
+    synchroniser_permissions_tresorerie(membership)
+    return membership
 
 
 @transaction.atomic
@@ -77,6 +82,7 @@ def set_member_role(*, membership, role):
 
     membership.role = role
     membership.save(update_fields=['role', 'updated_at'])
+    synchroniser_permissions_tresorerie(membership)
     return membership
 
 

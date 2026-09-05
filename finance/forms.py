@@ -19,7 +19,7 @@ class PaymentForm(TenantModelForm):
 
     class Meta:
         model = Payment
-        fields = ('lease', 'amount', 'payment_date', 'method', 'external_reference', 'notes')
+        fields = ('lease', 'compte', 'amount', 'payment_date', 'method', 'external_reference', 'notes')
         widgets = {
             'payment_date': forms.DateInput(attrs={'type': 'date'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
@@ -35,6 +35,16 @@ class PaymentForm(TenantModelForm):
             'unit', 'unit__property', 'tenant'
         ).exclude(status='draft')
         self.fields['amount'].label = 'Montant recu'
+        self.fields['compte'].label = 'Compte encaisseur'
+        self.fields['compte'].help_text = (
+            "Caisse, banque ou compte mobile. C'est ce choix qui produit "
+            "l'ecriture comptable."
+        )
+        try:
+            from comptes.models import Compte
+            self.fields['compte'].queryset = Compte.objects.filter(actif=True)
+        except Exception:
+            pass
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'field-input')
         self.fields['notes'].widget.attrs['class'] = 'field-input field-textarea'

@@ -58,6 +58,11 @@ INSTALLED_APPS = [
     'identity',
     'organizations',
     'finance',
+    # Modules metier prefabriques
+    'comptes',
+    'comptabilite_ohada',
+    'django_paie',
+    'django_rh',
     # API
     'rest_framework',
     'rest_framework_simplejwt',

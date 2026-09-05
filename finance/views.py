@@ -64,6 +64,8 @@ def payment_create(request):
                 method=form.cleaned_data['method'],
                 external_reference=form.cleaned_data['external_reference'],
                 notes=form.cleaned_data['notes'],
+                compte=form.cleaned_data.get('compte'),
+                user=request.user,
             )
         except DomainError as erreur:
             messages.error(request, erreur.message)

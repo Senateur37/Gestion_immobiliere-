@@ -16,6 +16,8 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 _abonnes = defaultdict(list)
+# Abonnes dont l'echec doit faire echouer l'operation entiere.
+_abonnes_critiques = defaultdict(list)
 
 
 class DomainEvent:
@@ -26,17 +28,26 @@ class DomainEvent:
         return f'{type(self).__name__}({details})'
 
 
-def subscribe(event_type, handler):
-    """Abonne un gestionnaire a un type d'evenement."""
-    if handler not in _abonnes[event_type]:
-        _abonnes[event_type].append(handler)
+def subscribe(event_type, handler, critical=False):
+    """Abonne un gestionnaire a un type d'evenement.
+
+    Un abonne ordinaire est un effet de bord : sa defaillance est
+    journalisee et l'operation se poursuit. Un abonne `critical` fait
+    partie du fait metier lui-meme — l'ecriture comptable d'un
+    encaissement, par exemple : son echec doit annuler l'operation
+    plutot que laisser la base dans un etat incoherent.
+    """
+    registre = _abonnes_critiques if critical else _abonnes
+    if handler not in registre[event_type]:
+        registre[event_type].append(handler)
     return handler
 
 
 def unsubscribe(event_type, handler):
     """Desabonne un gestionnaire, sans erreur s'il ne l'etait pas."""
-    if handler in _abonnes[event_type]:
-        _abonnes[event_type].remove(handler)
+    for registre in (_abonnes, _abonnes_critiques):
+        if handler in registre[event_type]:
+            registre[event_type].remove(handler)
 
 
 def publish(event):
@@ -50,6 +61,12 @@ def publish(event):
     comptable, par exemple — doivent etre appeles dans la transaction du
     service, pas via le bus.
     """
+    # Les abonnes critiques passent d'abord, et sans filet : si l'ecriture
+    # comptable echoue, l'encaissement qui l'a declenchee doit etre annule
+    # avec elle.
+    for handler in list(_abonnes_critiques[type(event)]):
+        handler(event)
+
     for handler in list(_abonnes[type(event)]):
         try:
             handler(event)
@@ -62,3 +79,4 @@ def publish(event):
 def clear_subscribers():
     """Vide les abonnements. Reserve aux tests."""
     _abonnes.clear()
+    _abonnes_critiques.clear()

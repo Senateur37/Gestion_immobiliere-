@@ -202,9 +202,36 @@ def allocate_payment(*, payment, rent_charge, amount):
     return allocation
 
 
+def _porter_au_compte(payment, user=None):
+    """Porte l'encaissement sur le compte financier reel.
+
+    C'est ce mouvement qui declenche, par le signal `mouvement_valide` de
+    django-comptes, l'ecriture comptable SYSCOHADA correspondante. La
+    finance ne connait donc pas la comptabilite : elle alimente la
+    tresorerie, et la comptabilite en decoule.
+
+    La cle d'idempotence est la reference de l'encaissement : rejouer
+    l'operation ne peut pas crediter le compte deux fois.
+    """
+    if payment.compte_id is None:
+        return None
+
+    from comptes.services.mouvement_service import MouvementCompteService
+
+    return MouvementCompteService.encaisser(
+        compte=payment.compte,
+        montant=payment.amount,
+        libelle=f'Loyer {payment.lease.lease_number} — {payment.reference}',
+        user=user,
+        reference=payment.reference,
+        idempotency_key=f'finance.payment:{payment.pk}',
+    )
+
+
 @transaction.atomic
 def record_payment(*, lease, amount, payment_date, method, reference=None,
-                   external_reference='', notes='', auto_allocate=True):
+                   external_reference='', notes='', auto_allocate=True,
+                   compte=None, user=None):
     """Enregistre un encaissement et l'impute sur les echeances les plus anciennes.
 
     L'imputation automatique suit l'ordre des echeances : un locataire qui
@@ -232,7 +259,13 @@ def record_payment(*, lease, amount, payment_date, method, reference=None,
         method=method,
         external_reference=external_reference,
         notes=notes,
+        compte=compte,
     )
+
+    # Le mouvement de tresorerie est dans la meme transaction que
+    # l'encaissement : on ne veut pas d'un loyer enregistre dont l'argent
+    # n'apparait dans aucun compte.
+    _porter_au_compte(payment, user=user)
 
     publish(PaymentRecorded(
         payment_id=payment.pk,

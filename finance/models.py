@@ -149,6 +149,18 @@ class Payment(TenantOwnedModel):
         verbose_name="Reference externe",
         help_text="Numero de transaction Orange Money ou Moov Money, avis de virement.",
     )
+    # Tout encaissement entre dans un compte financier reel : sans cela,
+    # l'argent est enregistre nulle part et la tresorerie ne reflete plus
+    # la realite. Le compte determine aussi le compte comptable mouvemente.
+    compte = models.ForeignKey(
+        'comptes.Compte',
+        on_delete=models.PROTECT,
+        related_name='encaissements_loyers',
+        verbose_name="Compte encaisseur",
+        null=True,
+        blank=True,
+        help_text="Caisse, banque ou compte mobile ou la somme a ete versee.",
+    )
     notes = models.TextField(blank=True, verbose_name="Notes")
 
     class Meta:

@@ -401,3 +401,129 @@ class EvenementsTests(FinanceTestCase):
 
         self.assertIsNotNone(paiement.pk)
         self.assertTrue(Payment.objects.filter(pk=paiement.pk).exists())
+
+
+class PontComptableTests(FinanceTestCase):
+    """L'encaissement alimente la tresorerie, qui alimente la comptabilite.
+
+    C'est le chainon qui manquait : le modele d'origine n'avait aucun lien
+    entre un paiement et une ecriture, si bien que la comptabilite etait
+    entierement ressaisie a la main.
+    """
+
+    def setUp(self):
+        super().setUp()
+        generate_rent_schedule(lease=self.bail)
+
+        from comptabilite_ohada.services.initialisation_service import InitialisationService
+        from comptes.models import Compte
+
+        InitialisationService.charger_plan_comptable()
+        InitialisationService.initialiser_journaux()
+
+        from comptabilite_ohada.models import ExerciceComptable
+
+        ExerciceComptable.objects.get_or_create(
+            date_debut=date(2026, 1, 1), date_fin=date(2026, 12, 31)
+        )
+
+        self.caisse = Compte.objects.create(
+            code='CAISSE-TEST',
+            nom='Caisse de test',
+            type='CAISSE',
+            solde_initial=Decimal('0'),
+            solde_actuel=Decimal('0'),
+            compte_comptable_code='571',
+        )
+
+    def test_un_encaissement_credite_le_compte(self):
+        record_payment(
+            lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
+            method=Payment.METHOD_CASH, compte=self.caisse, user=self.proprietaire,
+        )
+
+        self.caisse.refresh_from_db()
+        self.assertEqual(self.caisse.solde_actuel, Decimal('100000'))
+
+    def test_un_encaissement_produit_une_ecriture_equilibree(self):
+        """L'ecriture nait du signal `mouvement_valide`, emis apres commit.
+
+        captureOnCommitCallbacks est donc indispensable : dans un TestCase,
+        la transaction n'est jamais validee et les callbacks on_commit ne
+        s'executeraient pas.
+        """
+        from comptabilite_ohada.models import EcritureComptable
+
+        avant = EcritureComptable.objects.count()
+        with self.captureOnCommitCallbacks(execute=True):
+            record_payment(
+                lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
+                method=Payment.METHOD_CASH, compte=self.caisse, user=self.proprietaire,
+            )
+
+        self.assertEqual(EcritureComptable.objects.count(), avant + 1)
+        ecriture = EcritureComptable.objects.order_by('-id').first()
+        self.assertTrue(ecriture.est_equilibree)
+        self.assertEqual(ecriture.total_debit, Decimal('100000'))
+
+    def test_l_ecriture_mouvemente_la_caisse_et_le_produit(self):
+        from comptabilite_ohada.models import EcritureComptable
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record_payment(
+                lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
+                method=Payment.METHOD_CASH, compte=self.caisse, user=self.proprietaire,
+            )
+
+        ecriture = EcritureComptable.objects.order_by('-id').first()
+        mouvements = {ligne.compte.code: (ligne.debit, ligne.credit) for ligne in ecriture.lignes.all()}
+        self.assertEqual(mouvements['571'], (Decimal('100000'), Decimal('0')))
+        self.assertEqual(mouvements['706'], (Decimal('0'), Decimal('100000')))
+
+    def test_un_encaissement_sans_compte_reste_possible(self):
+        """La saisie sans compte ne doit pas bloquer, le temps de la reprise."""
+        paiement = record_payment(
+            lease=self.bail, amount=Decimal('100000'), payment_date=date(2026, 1, 5),
+            method=Payment.METHOD_CASH,
+        )
+        self.assertIsNone(paiement.compte_id)
+
+
+class EquilibreComptableTests(FinanceTestCase):
+    """Le module OHADA acceptait des ecritures fausses : verification."""
+
+    def setUp(self):
+        super().setUp()
+        from comptabilite_ohada.services.initialisation_service import InitialisationService
+
+        InitialisationService.charger_plan_comptable()
+        InitialisationService.initialiser_journaux()
+
+    def test_une_ecriture_desequilibree_est_refusee(self):
+        from django.core.exceptions import ValidationError
+
+        from comptabilite_ohada.models import (
+            CompteComptable, EcritureComptable, ExerciceComptable, JournalComptable,
+        )
+        from comptabilite_ohada.services.ecriture_service import EcritureService
+
+        exercice = ExerciceComptable.objects.create(
+            date_debut=date(2026, 1, 1), date_fin=date(2026, 12, 31)
+        )
+        with self.assertRaises(ValidationError):
+            EcritureService.creer_ecriture(
+                reference='TEST-DESEQUILIBRE',
+                date_ecriture=date(2026, 6, 1),
+                libelle='Ecriture fausse',
+                journal=JournalComptable.objects.first(),
+                exercice=exercice,
+                lignes=[
+                    {'compte': CompteComptable.objects.get(code='571'), 'debit': Decimal('100')},
+                    {'compte': CompteComptable.objects.get(code='706'), 'credit': Decimal('40')},
+                ],
+            )
+
+        # Et rien ne doit subsister en base.
+        self.assertFalse(
+            EcritureComptable.objects.filter(reference='TEST-DESEQUILIBRE').exists()
+        )
