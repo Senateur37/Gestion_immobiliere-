@@ -5,6 +5,8 @@ des biens. Ce modele ne sait pas representer une agence dont plusieurs
 employes gerent le portefeuille de plusieurs proprietaires. L'organisation
 prend donc la place du tenant, et l'utilisateur y accede par un membership.
 """
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
@@ -19,6 +21,13 @@ class Organization(TimeStampedModel):
         ('agency', 'Agence immobiliere'),
         ('owner', 'Proprietaire independant'),
     ]
+
+    # Identifiant stable, employe comme entreprise_id par les modules
+    # metier. Un UUID plutot que la cle primaire : il ne renseigne pas sur
+    # le nombre d'organisations, il ne change pas lors d'un export ou d'une
+    # reprise de base, et deux installations ne peuvent pas produire le
+    # meme. Le nom et le slug, eux, restent modifiables.
+    uid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, verbose_name="UID")
 
     name = models.CharField(max_length=200, verbose_name="Nom")
     slug = models.SlugField(max_length=220, unique=True, verbose_name="Identifiant")

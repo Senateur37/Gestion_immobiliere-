@@ -148,3 +148,202 @@ class MembershipResolutionTests(TestCase):
 
         membership = resolve_membership_for_request(self._request(Anonymous()))
         self.assertIsNone(membership)
+
+
+class RattachementDesModulesTests(TestCase):
+    """Les lignes des modules metier portent leur organisation des leur creation.
+
+    Sans cela, le passage au multi-entreprises obligerait a repasser sur
+    toutes les lignes existantes pour deviner a qui elles appartiennent.
+    """
+
+    def setUp(self):
+        self.alice = User.objects.create_user('alice', password='x')
+        self.bob = User.objects.create_user('bob', password='x')
+        self.agence_a = create_organization(name='Agence A', owner=self.alice)
+        self.agence_b = create_organization(name='Agence B', owner=self.bob)
+
+    def _creer_compte(self, code):
+        from decimal import Decimal
+
+        from comptes.models import Compte
+
+        return Compte.objects.create(
+            code=code, nom=f'Caisse {code}', type='CAISSE',
+            solde_initial=Decimal('0'), solde_actuel=Decimal('0'),
+        )
+
+    def test_une_ligne_creee_porte_l_organisation_active(self):
+        with organization_context(self.agence_a):
+            compte = self._creer_compte('C-A')
+
+        self.assertEqual(compte.entreprise_id, str(self.agence_a.uid))
+
+    def test_deux_organisations_produisent_deux_rattachements(self):
+        with organization_context(self.agence_a):
+            a = self._creer_compte('C-1')
+        with organization_context(self.agence_b):
+            b = self._creer_compte('C-2')
+
+        self.assertEqual(a.entreprise_id, str(self.agence_a.uid))
+        self.assertEqual(b.entreprise_id, str(self.agence_b.uid))
+        self.assertNotEqual(a.entreprise_id, b.entreprise_id)
+
+    def test_un_rattachement_existant_n_est_jamais_recrit(self):
+        """Une ligne appartient a l'organisation qui l'a creee."""
+        with organization_context(self.agence_a):
+            compte = self._creer_compte('C-STABLE')
+
+        with organization_context(self.agence_b):
+            compte.nom = 'Renomme depuis B'
+            compte.save()
+
+        compte.refresh_from_db()
+        self.assertEqual(compte.entreprise_id, str(self.agence_a.uid))
+
+    def test_hors_contexte_la_ligne_reste_sans_rattachement(self):
+        """Une commande d'administration ne doit pas echouer."""
+        compte = self._creer_compte('C-ADMIN')
+        self.assertEqual(compte.entreprise_id, '')
+
+    def test_tous_les_modeles_concernes_sont_branches(self):
+        from .rattachement import modeles_rattachables
+
+        labels = {modele._meta.label for modele in modeles_rattachables()}
+        attendus = {
+            'comptes.Compte',
+            'comptabilite_ohada.CompteComptable',
+            'comptabilite_ohada.EcritureComptable',
+            'rh.Employee',
+        }
+        self.assertTrue(attendus.issubset(labels), f'manquants : {attendus - labels}')
+
+
+class FiltrageParEntrepriseTests(TestCase):
+    """Le filtrage est ecrit et teste, mais volontairement inactif."""
+
+    def setUp(self):
+        self.alice = User.objects.create_user('alice', password='x')
+        self.agence = create_organization(name='Agence A', owner=self.alice)
+
+    def test_le_filtrage_est_inactif_par_defaut(self):
+        from . import entreprise
+
+        self.assertFalse(entreprise.FILTRER_PAR_ENTREPRISE)
+
+    def test_inactif_le_filtre_ne_retire_rien(self):
+        from decimal import Decimal
+
+        from comptes.models import Compte
+
+        from .entreprise import filtrer_par_entreprise
+
+        with organization_context(self.agence):
+            Compte.objects.create(code='C-1', nom='Caisse', type='CAISSE',
+                                  solde_initial=Decimal('0'), solde_actuel=Decimal('0'))
+
+        self.assertEqual(filtrer_par_entreprise(Compte.objects.all()).count(), 1)
+
+    def test_actif_le_filtre_restreint_a_l_organisation(self):
+        """Simulation de la bascule, sans la declencher pour de bon."""
+        from decimal import Decimal
+        from unittest.mock import patch
+
+        from comptes.models import Compte
+
+        from . import entreprise
+
+        autre = create_organization(name='Agence B', owner=User.objects.create_user('bob', password='x'))
+
+        with organization_context(self.agence):
+            Compte.objects.create(code='C-A', nom='Caisse A', type='CAISSE',
+                                  solde_initial=Decimal('0'), solde_actuel=Decimal('0'))
+        with organization_context(autre):
+            Compte.objects.create(code='C-B', nom='Caisse B', type='CAISSE',
+                                  solde_initial=Decimal('0'), solde_actuel=Decimal('0'))
+
+        with patch.object(entreprise, 'FILTRER_PAR_ENTREPRISE', True):
+            with organization_context(self.agence):
+                visibles = entreprise.filtrer_par_entreprise(Compte.objects.all())
+                self.assertEqual([c.code for c in visibles], ['C-A'])
+
+    def test_actif_hors_contexte_rien_n_est_visible(self):
+        """Fail closed : sans organisation, on ne montre rien."""
+        from decimal import Decimal
+        from unittest.mock import patch
+
+        from comptes.models import Compte
+
+        from . import entreprise
+
+        with organization_context(self.agence):
+            Compte.objects.create(code='C-A', nom='Caisse A', type='CAISSE',
+                                  solde_initial=Decimal('0'), solde_actuel=Decimal('0'))
+
+        with patch.object(entreprise, 'FILTRER_PAR_ENTREPRISE', True):
+            self.assertEqual(entreprise.filtrer_par_entreprise(Compte.objects.all()).count(), 0)
+
+
+class UidDesOrganisationsTests(TestCase):
+    """L'UID est ce que les modules stockent : il doit etre fiable."""
+
+    def setUp(self):
+        self.alice = User.objects.create_user('alice', password='x')
+
+    def test_chaque_organisation_recoit_un_uid_unique(self):
+        a = create_organization(name='Agence A', owner=self.alice)
+        b = create_organization(name='Agence B', owner=User.objects.create_user('bob', password='x'))
+
+        self.assertIsNotNone(a.uid)
+        self.assertNotEqual(a.uid, b.uid)
+
+    def test_l_uid_ne_change_pas_quand_l_organisation_est_renommee(self):
+        """C'est tout l'interet : le nom bouge, l'identifiant non."""
+        organisation = create_organization(name='Ancien nom', owner=self.alice)
+        uid_initial = organisation.uid
+
+        organisation.name = 'Nouveau nom'
+        organisation.slug = 'nouveau-nom'
+        organisation.save()
+        organisation.refresh_from_db()
+
+        self.assertEqual(organisation.uid, uid_initial)
+
+    def test_entreprise_id_courant_renvoie_l_uid_et_non_la_cle(self):
+        from .entreprise import entreprise_id_courant
+
+        organisation = create_organization(name='Agence A', owner=self.alice)
+        with organization_context(organisation):
+            valeur = entreprise_id_courant()
+
+        self.assertEqual(valeur, str(organisation.uid))
+        self.assertNotEqual(valeur, str(organisation.pk))
+
+    def test_hors_contexte_l_identifiant_est_vide(self):
+        from .entreprise import entreprise_id_courant
+
+        self.assertEqual(entreprise_id_courant(), '')
+
+    def test_une_organisation_disparue_ne_fait_pas_echouer(self):
+        """Mieux vaut une ligne sans rattachement qu'une exception."""
+        from .entreprise import uid_de
+
+        self.assertEqual(uid_de(999999), '')
+
+    def test_deux_organisations_ne_sont_jamais_confondues(self):
+        """Regression : un cache cle primaire -> UID les melangeait."""
+        from .entreprise import entreprise_id_courant
+
+        a = create_organization(name='Agence A', owner=self.alice)
+        b = create_organization(name='Agence B', owner=User.objects.create_user('bob', password='x'))
+
+        with organization_context(a):
+            vu_a = entreprise_id_courant()
+        with organization_context(b):
+            vu_b = entreprise_id_courant()
+        with organization_context(a):
+            vu_a_encore = entreprise_id_courant()
+
+        self.assertEqual(vu_a, str(a.uid))
+        self.assertEqual(vu_b, str(b.uid))
+        self.assertEqual(vu_a_encore, str(a.uid))

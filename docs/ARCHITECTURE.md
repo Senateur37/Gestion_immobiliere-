@@ -19,11 +19,17 @@ confondre :
 
 | Mécanisme | Portée | État |
 |---|---|---|
-| `organizations.Organization` | Les apps du projet (Proprietes, Locations, finance) | **Actif** |
-| `entreprise_id` | Les modules préfabriqués (comptes, comptabilité, paie, RH) | **Préparé, inactif** |
+| `organizations.Organization` | Les apps du projet (Proprietes, Locations, finance) | **Actif** — rattachement + filtrage |
+| `entreprise_id` | Les modules préfabriqués (comptes, comptabilité, paie, RH) | **Rattachement actif, filtrage différé** |
 
-Le premier fonctionne déjà et cloisonne réellement les données. Le second est
-un champ en base, rempli avec la chaîne vide, qui n'a encore aucun effet.
+Dans les deux cas, **toute ligne porte son organisation dès sa création**.
+Rien n'est laissé vide en attendant : le jour où plusieurs organisations
+coexisteront, aucune reprise de données ne sera nécessaire.
+
+La différence tient au filtrage. Les apps du projet filtrent déjà par leur
+manager. Les modules ne filtrent pas encore : avec une seule organisation, la
+restriction n'aurait aucun effet visible, sinon celui de masquer d'éventuelles
+erreurs de rattachement.
 
 ---
 
@@ -87,6 +93,17 @@ Ils portent donc un `entreprise_id` : un `CharField` indexé, opaque, que le
 projet hôte remplit comme il l'entend. C'est la convention que `django_paie`
 employait déjà ; elle a été généralisée aux trois autres.
 
+**Ce champ contient l'UID de l'organisation, pas sa clé primaire.**
+`Organization.uid` est un UUID attribué à la création. Trois raisons :
+
+- il survit à un export puis réimport de la base, là où une clé primaire
+  peut être réattribuée ;
+- il ne renseigne pas sur le nombre d'organisations ;
+- deux installations ne peuvent pas produire le même, ce qui rend une fusion
+  de bases possible.
+
+Le nom et le slug d'une organisation restent modifiables ; son UID, jamais.
+
 ### Ce qui a été fait
 
 - `entreprise_id` ajouté à `Compte`, `CompteComptable`, `EcritureComptable`,
@@ -95,26 +112,50 @@ employait déjà ; elle a été généralisée aux trois autres.
   `code`, `reference`. Deux entreprises pourront avoir chacune leur
   `CAISSE-01` ; auparavant la seconde aurait été rejetée.
 
-### Ce qui n'a pas été fait, volontairement
+### Le rattachement, lui, est actif
 
-Le champ reste vide partout. Aucun filtrage n'est appliqué. Les écrans n'ont
-pas été touchés. En mono-entreprise, `entreprise_id = ''` pour toutes les
-lignes, donc l'unicité composée se comporte **exactement** comme l'unicité
-simple d'avant.
+`organizations/rattachement.py` branche un signal `pre_save` sur les **douze
+modèles** des modules portant un `entreprise_id`. Chaque ligne créée dans un
+contexte d'organisation porte son identifiant, sans que les modules aient à
+connaître le modèle `Organization`.
+
+Deux règles :
+
+- **Un rattachement existant n'est jamais réécrit.** Une ligne appartient à
+  l'organisation qui l'a créée, même si elle est modifiée plus tard depuis un
+  autre contexte.
+- **Hors contexte, la ligne reste sans rattachement** plutôt que de faire
+  échouer l'opération : une commande d'administration ou une migration est
+  légitime.
+
+`uid_de()` lit l'UID en base à chaque appel, **sans cache**. Une première
+version en gardait un, pour épargner une lecture à chaque enregistrement :
+une clé primaire réutilisée — après restauration d'une base, par exemple —
+servait alors l'UID d'une autre organisation. Rattacher une ligne à la
+mauvaise entreprise est sans commune mesure avec le gain d'un `SELECT` sur
+clé primaire indexée. Un test couvre cette régression.
+
+Les lignes antérieures ont été rattachées par la migration
+`organizations/0002`, qui refuse de deviner s'il existe déjà plusieurs
+organisations.
 
 La chaîne vide plutôt que `NULL` est un choix délibéré : en SQL, `NULL` n'est
-jamais égal à lui-même, ce qui laisserait passer des doublons.
+jamais égal à lui-même, ce qui laisserait passer des doublons sur l'unicité
+composée.
+
+### Ce qui n'a pas été fait, volontairement
+
+Le filtrage des sélections, et les écrans.
 
 ### La bascule, le jour venu
 
-Tout passe par `organizations/entreprise.py` :
+Une seule chose : passer `FILTRER_PAR_ENTREPRISE` à `True` dans
+`organizations/entreprise.py`, et faire passer les sélections des modules par
+`filtrer_par_entreprise()`. La fonction est déjà écrite et testée, y compris
+son comportement une fois active — un test simule la bascule sans la
+déclencher.
 
-1. Mettre `ACTIVER_MULTI_ENTREPRISES = True`.
-2. Remplir `entreprise_id` sur les lignes existantes.
-3. Faire passer les sélections des modules par `filtrer_par_entreprise()`.
-
-Le code appelant est déjà écrit correctement : `entreprise_id_courant()`
-renvoie la chaîne vide tant que l'interrupteur est à `False`.
+Aucune reprise de données : elles sont déjà rattachées.
 
 ---
 

@@ -1,53 +1,85 @@
-"""Raccord entre l'organisation et l'`entreprise_id` des modules metier.
+"""Lien entre l'organisation et l'`entreprise_id` des modules metier.
 
-Les modules prefabriques (comptes, comptabilite_ohada, django_paie,
-django_rh) portent un champ `entreprise_id` : une chaine opaque, et non
-une cle etrangere, pour rester utilisables sans connaitre le modele
-d'organisation du projet hote.
+Deux notions a ne pas confondre.
 
-Aujourd'hui l'application ne sert qu'une entreprise : le champ reste vide
-partout, et les modules se comportent exactement comme avant. Le jour ou
-plusieurs entreprises coexisteront, il suffira de :
+**Le rattachement est actif.** Chaque ligne creee dans les modules porte
+l'identifiant de l'organisation active, inscrit par le signal de
+`organizations/rattachement.py`. Rien n'est laisse vide en attendant : le
+jour ou plusieurs organisations coexisteront, aucune reprise de donnees ne
+sera necessaire, puisque l'appartenance est deja enregistree.
 
-  1. mettre ACTIVER_MULTI_ENTREPRISES a True ;
-  2. remplir `entreprise_id` sur les lignes existantes avec
-     `entreprise_id_courant()` ;
-  3. filtrer les selections des modules sur cette valeur.
+**Le filtrage est differe.** Une seule organisation existe aujourd'hui :
+restreindre les selections n'aurait aucun effet visible, sinon celui de
+masquer d'eventuelles erreurs de rattachement. `filtrer_par_entreprise()`
+est donc ecrite et testee, mais branchee nulle part.
 
-Rien de tout cela n'est branche pour l'instant, volontairement : le
-schema est pret, le comportement est inchange.
+Le jour du multi-entreprises, il n'y aura qu'une chose a faire : passer
+FILTRER_PAR_ENTREPRISE a True et faire passer les selections des modules
+par `filtrer_par_entreprise()`.
 """
 from core.tenancy import get_current_organization_id
 
-# Interrupteur unique du passage au multi-entreprises. Laisse a False tant
-# que l'application ne sert qu'une entreprise.
-ACTIVER_MULTI_ENTREPRISES = False
+# Ne gouverne que le filtrage des selections. Le rattachement des lignes
+# a leur organisation, lui, est toujours actif.
+FILTRER_PAR_ENTREPRISE = False
 
-# Valeur employee en mono-entreprise. La chaine vide, et non None, pour
-# que la contrainte d'unicite (entreprise_id, code) se comporte comme
-# l'unicite simple d'avant : NULL n'est jamais egal a lui-meme en SQL,
-# ce qui laisserait passer des doublons.
-ENTREPRISE_UNIQUE = ''
+def uid_de(organisation_pk):
+    """UID d'une organisation, depuis sa cle primaire.
+
+    Volontairement sans cache. Une premiere version en gardait un, pour
+    epargner une lecture a chaque enregistrement : une cle primaire
+    reutilisee — apres restauration d'une base, par exemple — servait
+    alors l'UID d'une autre organisation. Rattacher une ligne a la
+    mauvaise entreprise est un prix sans commune mesure avec le gain d'un
+    SELECT sur cle primaire indexee.
+
+    Renvoie la chaine vide si l'organisation n'existe plus : mieux vaut
+    une ligne sans rattachement qu'une exception au milieu d'un
+    enregistrement.
+    """
+    if organisation_pk is None:
+        return ''
+
+    from .models import Organization
+
+    uid = (
+        Organization.objects.filter(pk=organisation_pk)
+        .values_list('uid', flat=True)
+        .first()
+    )
+    return str(uid) if uid else ''
 
 
 def entreprise_id_courant():
-    """Identifiant d'entreprise a inscrire sur les lignes des modules.
+    """Identifiant de l'organisation active, sous forme de chaine.
 
-    Renvoie la chaine vide tant que le multi-entreprises n'est pas active,
-    de sorte que tout le code appelant est deja ecrit correctement le jour
-    de la bascule.
+    C'est l'UID et non la cle primaire : il ne change pas lors d'un export
+    puis reimport, il ne renseigne pas sur le nombre d'organisations, et
+    deux installations ne peuvent pas produire le meme.
+
+    Les modules stockent un CharField et non une cle etrangere : ils
+    restent ainsi utilisables dans un projet qui n'a pas d'organisations.
+
+    Chaine vide hors contexte — commande d'administration, migration —
+    plutot qu'une erreur : ces traitements sont legitimes et n'ont pas a
+    echouer faute d'organisation active.
     """
-    if not ACTIVER_MULTI_ENTREPRISES:
-        return ENTREPRISE_UNIQUE
-
-    organisation_id = get_current_organization_id()
-    return str(organisation_id) if organisation_id is not None else ENTREPRISE_UNIQUE
+    return uid_de(get_current_organization_id())
 
 
 def filtrer_par_entreprise(queryset):
-    """Restreint un queryset de module a l'entreprise courante.
+    """Restreint un queryset de module a l'organisation active.
 
-    Sans effet en mono-entreprise : le filtre porte alors sur la chaine
-    vide, que toutes les lignes possedent.
+    Sans effet tant que FILTRER_PAR_ENTREPRISE vaut False : la fonction
+    existe et se teste des maintenant, pour que la bascule ne soit qu'un
+    changement de valeur.
     """
-    return queryset.filter(entreprise_id=entreprise_id_courant())
+    if not FILTRER_PAR_ENTREPRISE:
+        return queryset
+
+    identifiant = entreprise_id_courant()
+    if not identifiant:
+        # Hors contexte, on ne devine pas : mieux vaut ne rien renvoyer
+        # que renvoyer les donnees de toutes les organisations.
+        return queryset.none()
+    return queryset.filter(entreprise_id=identifiant)
