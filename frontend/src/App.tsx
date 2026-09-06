@@ -4,10 +4,17 @@ import Mise from './components/Mise'
 import { useAuth } from './auth/AuthContext'
 import Baux from './pages/Baux'
 import Biens from './pages/Biens'
+import Comptabilite from './pages/Comptabilite'
 import Connexion from './pages/Connexion'
+import Documents from './pages/Documents'
 import Echeances from './pages/Echeances'
 import Encaissements from './pages/Encaissements'
+import Locataires from './pages/Locataires'
+import Maintenance from './pages/Maintenance'
+import Rapports from './pages/Rapports'
 import TableauDeBord from './pages/TableauDeBord'
+import Unites from './pages/Unites'
+import Utilisateurs from './pages/Utilisateurs'
 
 export default function App() {
   const { utilisateur, chargement } = useAuth()
@@ -31,9 +38,19 @@ export default function App() {
       <Routes>
         <Route path="/" element={<TableauDeBord />} />
         <Route path="/biens" element={<Biens />} />
+        <Route path="/unites" element={<Unites />} />
         <Route path="/baux" element={<Baux />} />
+        <Route path="/locataires" element={<Locataires />} />
+
+        <Route path="/rapports" element={<Rapports />} />
         <Route path="/echeances" element={<Echeances />} />
         <Route path="/encaissements" element={<Encaissements />} />
+        <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/comptabilite" element={<Comptabilite />} />
+
+        <Route path="/utilisateurs" element={<Utilisateurs />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Mise>

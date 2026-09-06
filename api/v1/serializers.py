@@ -134,3 +134,100 @@ class CompteSerializer(serializers.Serializer):
     nom = serializers.CharField(read_only=True)
     type = serializers.CharField(read_only=True)
     solde_actuel = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+
+
+# --- Locataires ---------------------------------------------------------
+
+class LocataireSerializer(serializers.Serializer):
+    """Locataire vu depuis son bail : le CRM affiche des personnes, pas des comptes."""
+
+    id = serializers.IntegerField(read_only=True)
+    full_name = serializers.SerializerMethodField()
+    username = serializers.CharField(read_only=True)
+    email = serializers.CharField(read_only=True)
+    phone = serializers.CharField(read_only=True)
+    leases_count = serializers.IntegerField(read_only=True)
+    active_lease = serializers.SerializerMethodField()
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    def get_full_name(self, personne):
+        return personne.get_full_name() or personne.username
+
+    def get_active_lease(self, personne):
+        bail = getattr(personne, 'bail_actif', None)
+        return bail.lease_number if bail else None
+
+
+# --- Maintenance --------------------------------------------------------
+
+class MaintenanceSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    title = serializers.CharField(read_only=True)
+    unit_label = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    priority = serializers.CharField(read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    status = serializers.CharField(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    submitted_at = serializers.DateTimeField(read_only=True)
+    cost = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    def get_unit_label(self, demande):
+        unite = demande.unit
+        return f'{unite.property.name} - {unite.unit_number}'
+
+
+# --- Documents ----------------------------------------------------------
+
+class DocumentSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    title = serializers.CharField(read_only=True)
+    category = serializers.CharField(read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    file_size = serializers.IntegerField(read_only=True)
+    mime_type = serializers.CharField(read_only=True)
+    is_signed = serializers.BooleanField(read_only=True)
+    expires_at = serializers.DateField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+
+# --- Comptabilite -------------------------------------------------------
+
+class EcritureSerializer(serializers.Serializer):
+    """Ecriture comptable, avec ses lignes."""
+
+    id = serializers.IntegerField(read_only=True)
+    reference = serializers.CharField(read_only=True)
+    date_ecriture = serializers.DateField(read_only=True)
+    libelle = serializers.CharField(read_only=True)
+    journal = serializers.CharField(source='journal.code', read_only=True)
+    total_debit = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    total_credit = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    est_equilibree = serializers.BooleanField(read_only=True)
+    lignes = serializers.SerializerMethodField()
+
+    def get_lignes(self, ecriture):
+        return [
+            {
+                'compte': ligne.compte.code,
+                'intitule': ligne.compte.libelle,
+                'debit': str(ligne.debit),
+                'credit': str(ligne.credit),
+            }
+            for ligne in ecriture.lignes.select_related('compte')
+        ]
+
+
+# --- Membres ------------------------------------------------------------
+
+class MembreSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    full_name = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    role = serializers.CharField(read_only=True)
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+
+    def get_full_name(self, membre):
+        return membre.user.get_full_name() or membre.user.username

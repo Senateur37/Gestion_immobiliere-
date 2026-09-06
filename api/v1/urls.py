@@ -10,8 +10,13 @@ from identity.views import CurrentUserView, LoginView, MyOrganizationsView
 
 from .views import (
     ComptesListView,
+    DocumentListView,
+    EcritureListView,
     GenerateScheduleView,
     LeaseListView,
+    LocataireListView,
+    MaintenanceListView,
+    MembreListView,
     PaymentListView,
     PropertyDetailView,
     PropertyListCreateView,
@@ -19,6 +24,7 @@ from .views import (
     RentChargeListView,
     UnitListCreateView,
     dashboard,
+    rapport,
 )
 
 app_name = 'api-v1'
@@ -44,4 +50,12 @@ urlpatterns = [
     path('payments/record/', RecordPaymentView.as_view(), name='payment-record'),
 
     path('accounts/', ComptesListView.as_view(), name='account-list'),
+
+    # Ecrans repris de l'interface Django.
+    path('tenants/', LocataireListView.as_view(), name='tenant-list'),
+    path('maintenance/', MaintenanceListView.as_view(), name='maintenance-list'),
+    path('documents/', DocumentListView.as_view(), name='document-list'),
+    path('accounting/entries/', EcritureListView.as_view(), name='entry-list'),
+    path('members/', MembreListView.as_view(), name='member-list'),
+    path('report/', rapport, name='report'),
 ]

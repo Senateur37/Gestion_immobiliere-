@@ -12,7 +12,7 @@ export default defineConfig({
       '/api': {
         // Port du serveur Django. Configurable, parce que 8000 est
         // souvent deja pris par un autre projet sur le poste.
-        target: process.env.VITE_API_URL ?? 'http://127.0.0.1:8140',
+        target: process.env.VITE_API_URL ?? 'http://127.0.0.1:8142',
         changeOrigin: true,
       },
     },
