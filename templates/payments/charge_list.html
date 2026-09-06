@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Échéances | ImmoPilot{% endblock %}
+{% block eyebrow %}Opérations / Suivi financier{% endblock %}
+{% block content %}
+<h1>Échéances</h1>
+<p class="intro">Ce que vos locataires doivent, ce qu'ils ont versé, et ce qui reste à encaisser.</p>
+
+<div style="display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap;">
+  <div class="metric"><span>Total dû</span><strong>{{ total_du|floatformat:0 }} FCFA</strong></div>
+  <div class="metric"><span>Reste à encaisser</span><strong class="expense">{{ total_restant|floatformat:0 }} FCFA</strong></div>
+  <a class="btn-primary" href="{% url 'payment_create' %}" style="margin-left:auto; align-self:center;">Enregistrer un encaissement</a>
+  <a href="{% url 'payment_history' %}" style="align-self:center;">Historique des encaissements</a>
+</div>
+
+<div class="filters" style="margin-bottom:20px">
+  <a class="{% if not status %}active{% endif %}" href="{% url 'payment_list' %}">Toutes</a>
+  {% for value,label in status_choices %}<a class="{% if status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}
+  <a class="{% if status == 'overdue' %}active{% endif %}" href="?status=overdue">En retard</a>
+</div>
+
+<section class="panel"><table>
+<thead><tr><th>Période</th><th>Bien / unité</th><th>Locataire</th><th>Échéance</th><th>Dû</th><th>Reste</th><th>État</th></tr></thead>
+<tbody>
+{% for charge in charges %}
+<tr>
+  <td><span class="name">{{ charge.get_kind_display }}</span><span class="sub">{{ charge.period_start|date:'d/m/Y' }} → {{ charge.period_end|date:'d/m/Y' }}</span></td>
+  <td>{{ charge.lease.unit.property.name }}<span class="sub">Unité {{ charge.lease.unit.unit_number }}</span></td>
+  <td>{{ charge.lease.tenant.get_full_name|default:charge.lease.tenant.username }}</td>
+  <td>{{ charge.due_date|date:'d/m/Y' }}{% if charge.due_date < today and charge.amount_outstanding > 0 %}<span class="sub" style="color:var(--danger);">en retard</span>{% endif %}</td>
+  <td class="amount">{{ charge.amount_due|floatformat:0 }}</td>
+  <td class="amount">{{ charge.amount_outstanding|floatformat:0 }}</td>
+  <td><span class="badge {{ charge.status }}">{{ charge.get_status_display }}</span></td>
+</tr>
+{% empty %}
+<tr><td colspan="7" class="empty" style="text-align:center;padding:45px">Aucune échéance pour ce filtre. Générez l'échéancier depuis un bail actif.</td></tr>
+{% endfor %}
+</tbody></table></section>
+{% endblock %}

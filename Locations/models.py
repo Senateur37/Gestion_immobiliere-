@@ -1,10 +1,16 @@
 # apps/leases/models.py
 from django.db import models
 from django.conf import settings
+
+from core.models import TenantOwnedModel
 from Proprietes.models import Unit
 
-class Lease(models.Model):
-    """Contrat de location (bail)"""
+
+class Lease(TenantOwnedModel):
+    """Contrat de location (bail).
+
+    Rattache a une organisation, comme l'unite qu'il loue.
+    """
     STATUS_CHOICES = [
         ('draft', 'Brouillon'),
         ('active', 'Actif'),
@@ -19,12 +25,12 @@ class Lease(models.Model):
         related_name='leases'
     )
     tenant = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
         related_name='leases',
-        limit_choices_to={'role': 'tenant'}
+        limit_choices_to={'role': 'tenant'},
     )
-    lease_number = models.CharField(max_length=50, unique=True, verbose_name="Numéro de bail")
+    lease_number = models.CharField(max_length=50, verbose_name="Numero de bail")
     start_date = models.DateField(verbose_name="Date de début")
     end_date = models.DateField(verbose_name="Date de fin")
     notice_period_days = models.IntegerField(default=90, help_text="Délai de préavis en jours", verbose_name="Délai de préavis (jours)")
@@ -41,24 +47,27 @@ class Lease(models.Model):
     document = models.FileField(upload_to='leases/documents/', null=True, blank=True, verbose_name="Document")
     signed_at = models.DateTimeField(null=True, blank=True, verbose_name="Signé le")
     notes = models.TextField(blank=True, verbose_name="Notes")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
-    
+
     class Meta:
         db_table = 'leases_lease'
         ordering = ['-start_date']
+        # Le numero de bail etait unique pour toute la base : deux
+        # organisations n'auraient pas pu avoir chacune leur BAIL-001.
+        # L'unicite se joue a l'interieur de l'organisation.
+        unique_together = [['organization', 'lease_number']]
         indexes = [
             models.Index(fields=['unit', 'status']),
             models.Index(fields=['tenant', 'status']),
             models.Index(fields=['end_date']),
+            models.Index(fields=['organization', 'status']),
         ]
     
     def __str__(self):
         return f"Bail {self.lease_number} - {self.unit}"
 
 
-class LeaseTenant(models.Model):
-    """Table de jointure pour baux avec plusieurs locataires"""
+class LeaseTenant(TenantOwnedModel):
+    """Table de jointure pour baux a plusieurs locataires."""
     lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='lease_tenants')
     tenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=False)
@@ -69,8 +78,8 @@ class LeaseTenant(models.Model):
         unique_together = [['lease', 'tenant']]
 
 
-class Inspection(models.Model):
-    """État des lieux (entrée/sortie)"""
+class Inspection(TenantOwnedModel):
+    """Etat des lieux (entree, sortie ou periodique)."""
     TYPE_CHOICES = [
         ('move_in', 'État des lieux d\'entrée'),
         ('move_out', 'État des lieux de sortie'),
@@ -88,8 +97,7 @@ class Inspection(models.Model):
         related_name='inspections_conducted'
     )
     document = models.FileField(upload_to='inspections/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         db_table = 'leases_inspection'
         ordering = ['-inspection_date']

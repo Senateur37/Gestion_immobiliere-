@@ -11,20 +11,19 @@ from .forms import TransactionForm
 from .models import Transaction
 from Locations.models import Lease
 from Maintenance.models import MaintenanceRequest
-from Paiements.forms import PaymentForm
-from Paiements.models import Payment
+from finance.models import RentCharge
 from Proprietes.models import Property, Unit
 
 
 @login_required
 def dashboard(request):
-	properties = Property.objects.filter(owner=request.user)
-	units = Unit.objects.filter(property__owner=request.user)
-	leases = Lease.objects.filter(unit__property__owner=request.user)
-	payments = Payment.objects.filter(lease__unit__property__owner=request.user)
-	maintenance = MaintenanceRequest.objects.filter(unit__property__owner=request.user)
+	properties = Property.objects.all()
+	units = Unit.objects.all()
+	leases = Lease.objects.all()
+	charges = RentCharge.objects.all()
+	maintenance = MaintenanceRequest.objects.filter(unit__in=Unit.objects.all())
 	active_leases = leases.filter(status='active')
-	pending_payments = payments.filter(status__in=['pending', 'overdue'])
+	pending_charges = charges.exclude(status__in=[RentCharge.STATUS_PAID, RentCharge.STATUS_CANCELLED])
 	open_maintenance = maintenance.filter(status__in=['submitted', 'in_progress'])
 	month_labels, month_income = [], []
 	today = timezone.now().date()
@@ -42,9 +41,9 @@ def dashboard(request):
 		'unit_count': units.count(),
 		'occupied_units': units.filter(status='occupied').count(),
 		'active_leases': active_leases.count(),
-		'pending_payments': pending_payments.count(),
+		'pending_payments': pending_charges.count(),
 		'open_maintenance': open_maintenance.count(),
-		'pending_amount': pending_payments.aggregate(total=Sum('amount'))['total'] or 0,
+		'pending_amount': sum((charge.amount_outstanding for charge in pending_charges), start=0),
 		'monthly_revenue': active_leases.aggregate(total=Sum('rent_amount'))['total'] or 0,
 		'recent_properties': properties[:6],
 		'month_labels': month_labels,
@@ -53,51 +52,8 @@ def dashboard(request):
 	return render(request, 'dashboard.html', context)
 
 
-@login_required
-def payment_list(request):
-	payments = Payment.objects.filter(
-		lease__unit__property__owner=request.user,
-	).select_related('lease', 'lease__unit', 'lease__unit__property', 'lease__tenant')
-	status = request.GET.get('status', '').strip()
-	if status:
-		payments = payments.filter(status=status)
-	return render(request, 'payments/payment_list.html', {
-		'payments': payments,
-		'status': status,
-		'status_choices': Payment.STATUS_CHOICES,
-	})
-@login_required
-def payment_receipt(request, pk):
-	payment = get_object_or_404(Payment, pk=pk, lease__unit__property__owner=request.user)
-	if payment.status != 'paid':
-		messages.error(request, 'La quittance n\'est disponible que pour les paiements réglés.')
-		return redirect('payment_list')
-	return render(request, 'payments/receipt_pdf.html', {'payment': payment})
 
 
-@login_required
-def payment_update(request, pk):
-	payment = get_object_or_404(Payment, pk=pk, lease__unit__property__owner=request.user)
-	form = PaymentForm(request.POST or None, request.FILES or None, instance=payment)
-	if request.method == 'POST' and form.is_valid():
-		form.save()
-		messages.success(request, f'Le paiement {payment.payment_number} a été mis à jour.')
-		return redirect('payment_list')
-	return render(request, 'shared_form.html', {'form': form, 'page_title': 'Modifier le paiement', 'back_url': 'payment_list', 'has_file': True})
-
-
-@login_required
-def payment_delete(request, pk):
-	payment = get_object_or_404(Payment, pk=pk, lease__unit__property__owner=request.user)
-	if request.method == 'POST':
-		payment.delete()
-		messages.success(request, f'Le paiement {payment.payment_number} a été supprimé.')
-		return redirect('payment_list')
-	return render(request, 'confirm_delete.html', {
-		'object_label': f'le paiement {payment.payment_number}',
-		'delete_message': f'Le paiement « {payment.payment_number} » sera définitivement supprimé.',
-		'cancel_url': reverse('payment_list'),
-	})
 
 
 @login_required
@@ -155,15 +111,14 @@ def transaction_delete(request, pk):
 
 @login_required
 def business_report(request):
-	properties = Property.objects.filter(owner=request.user)
-	units = Unit.objects.filter(property__owner=request.user)
-	active_leases = Lease.objects.filter(unit__property__owner=request.user, status='active').select_related('unit', 'unit__property')
-	pending_payments = Payment.objects.filter(
-		lease__unit__property__owner=request.user,
-		status__in=['pending', 'overdue'],
+	properties = Property.objects.all()
+	units = Unit.objects.all()
+	active_leases = Lease.objects.filter(status='active').select_related('unit', 'unit__property')
+	pending_payments = RentCharge.objects.exclude(
+		status__in=[RentCharge.STATUS_PAID, RentCharge.STATUS_CANCELLED],
 	).select_related('lease', 'lease__unit', 'lease__unit__property', 'lease__tenant')
 	open_maintenance = MaintenanceRequest.objects.filter(
-		unit__property__owner=request.user,
+		unit__in=Unit.objects.all(),
 		status__in=['submitted', 'in_progress'],
 	).select_related('unit', 'unit__property', 'tenant')
 	transactions = request.user.transactions.all()
@@ -174,10 +129,11 @@ def business_report(request):
 	occupancy_rate = round((occupied_units / unit_count) * 100) if unit_count else 0
 	total_rent = active_leases.aggregate(total=Sum('rent_amount'))['total'] or 0
 	average_rent = total_rent / active_leases.count() if active_leases.count() else 0
-	pending_amount = pending_payments.aggregate(total=Sum('amount'))['total'] or 0
-	due_soon = Payment.objects.filter(
-		lease__unit__property__owner=request.user,
-		status='pending',
+	# Le reste a payer se calcule echeance par echeance : une somme SQL sur
+	# les montants dus ignorerait les versements deja recus.
+	pending_amount = sum((charge.amount_outstanding for charge in pending_payments), start=0)
+	due_soon = RentCharge.objects.filter(
+		status=RentCharge.STATUS_PENDING,
 		due_date__lte=timezone.now().date() + timedelta(days=30),
 	).count()
 
@@ -185,12 +141,12 @@ def business_report(request):
 	for row in units.values('status').annotate(total=Count('id')):
 		unit_status_counts[row['status']] = row['total']
 
-	all_payments = Payment.objects.filter(lease__unit__property__owner=request.user)
-	payment_status_counts = {value: 0 for value, _ in Payment.STATUS_CHOICES}
+	all_payments = RentCharge.objects.all()
+	payment_status_counts = {value: 0 for value, _ in RentCharge.STATUS_CHOICES}
 	for row in all_payments.values('status').annotate(total=Count('id')):
 		payment_status_counts[row['status']] = row['total']
 
-	all_maintenance = MaintenanceRequest.objects.filter(unit__property__owner=request.user)
+	all_maintenance = MaintenanceRequest.objects.filter(unit__in=Unit.objects.all())
 	priority_counts = {value: 0 for value, _ in MaintenanceRequest.PRIORITY_CHOICES}
 	for row in all_maintenance.values('priority').annotate(total=Count('id')):
 		priority_counts[row['priority']] = row['total']
@@ -220,8 +176,8 @@ def business_report(request):
 		'open_maintenance': open_maintenance.count(),
 		'unit_status_labels': [label for _, label in Unit.STATUS_CHOICES],
 		'unit_status_data': [unit_status_counts[value] for value, _ in Unit.STATUS_CHOICES],
-		'payment_status_labels': [label for _, label in Payment.STATUS_CHOICES],
-		'payment_status_data': [payment_status_counts[value] for value, _ in Payment.STATUS_CHOICES],
+		'payment_status_labels': [label for _, label in RentCharge.STATUS_CHOICES],
+		'payment_status_data': [payment_status_counts[value] for value, _ in RentCharge.STATUS_CHOICES],
 		'priority_labels': [label for _, label in MaintenanceRequest.PRIORITY_CHOICES],
 		'priority_data': [priority_counts[value] for value, _ in MaintenanceRequest.PRIORITY_CHOICES],
 		'month_labels': month_labels,

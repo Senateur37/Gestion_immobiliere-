@@ -53,15 +53,34 @@ INSTALLED_APPS = [
     'Documents',
     'Comptabilite',
     'abonnements',
+    # Socle de la refonte
+    'core',
+    'identity',
+    'organizations',
+    'finance',
+    # Modules metier prefabriques
+    'comptes',
+    'comptabilite_ohada',
+    'django_paie',
+    'django_rh',
+    # API
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Doit suivre l'authentification : il lit request.user pour resoudre
+    # l'organisation active et alimenter le contexte de tenancy.
+    'core.middleware.OrganizationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -98,9 +117,13 @@ WSGI_APPLICATION = 'Immobiliere.wsgi.application'
 
 import dj_database_url
 
+# L'URL de connexion vient de l'environnement. Elle etait auparavant ecrite
+# en clair ici, mot de passe compris, dans un depot public. A defaut de
+# DATABASE_URL, on retombe sur un SQLite local : un poste de developpement
+# ne doit jamais ecrire par accident sur la base de production.
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://neondb_owner:npg_pMGXA3oaB9zg@ep-raspy-smoke-axzyw1j2-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
         conn_max_age=600,
         conn_health_checks=True,
     )
@@ -156,3 +179,60 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# ---------------------------------------------------------------------------
+# API REST
+# ---------------------------------------------------------------------------
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # Conservee pour que l'API reste utilisable depuis l'interface
+        # Django existante pendant la periode ou les deux coexistent.
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        # Fermee par defaut : une vue s'ouvre explicitement, elle ne
+        # s'oublie pas ouverte.
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25,
+    'EXCEPTION_HANDLER': 'core.api.exception_handler',
+}
+
+from datetime import timedelta  # noqa: E402
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# Origines autorisees pour le front React. En developpement on liste les
+# deux ports usuels de Vite ; en production la valeur vient de
+# l'environnement.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:5173,http://127.0.0.1:5173',
+    ).split(',')
+    if origin.strip()
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# L'en-tete par lequel le front indique sur quelle organisation il travaille.
+CORS_ALLOW_HEADERS = (
+    'accept', 'authorization', 'content-type', 'origin',
+    'user-agent', 'x-csrftoken', 'x-requested-with',
+    'x-organization',
+)

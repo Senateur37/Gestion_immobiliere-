@@ -9,7 +9,7 @@ from .models import Property, Unit
 
 @login_required
 def property_list(request):
-	properties = Property.objects.filter(owner=request.user)
+	properties = Property.objects.all()
 	search = request.GET.get('q', '').strip()
 	if search:
 		properties = properties.filter(name__icontains=search) | properties.filter(city__icontains=search)
@@ -25,6 +25,8 @@ def property_create(request):
 	form = PropertyForm(request.POST or None)
 	if request.method == 'POST' and form.is_valid():
 		property = form.save(commit=False)
+		# L'organisation vient du contexte de la requete ; owner reste
+		# le proprietaire reel du bien, renseigne separement.
 		property.owner = request.user
 		property.save()
 		messages.success(request, 'Le bien a ete ajoute a votre portefeuille.')
@@ -34,7 +36,7 @@ def property_create(request):
 
 @login_required
 def property_update(request, pk):
-	property = get_object_or_404(Property, pk=pk, owner=request.user)
+	property = get_object_or_404(Property, pk=pk)
 	form = PropertyForm(request.POST or None, instance=property)
 	if request.method == 'POST' and form.is_valid():
 		form.save()
@@ -45,7 +47,7 @@ def property_update(request, pk):
 
 @login_required
 def property_delete(request, pk):
-	property = get_object_or_404(Property, pk=pk, owner=request.user)
+	property = get_object_or_404(Property, pk=pk)
 	if request.method == 'POST':
 		property.delete()
 		messages.success(request, 'Le bien a ete supprime.')
@@ -55,7 +57,7 @@ def property_delete(request, pk):
 
 @login_required
 def unit_list(request):
-	units = Unit.objects.filter(property__owner=request.user).select_related('property')
+	units = Unit.objects.select_related('property')
 	status = request.GET.get('status', '').strip()
 	if status:
 		units = units.filter(status=status)
@@ -68,7 +70,7 @@ def unit_list(request):
 
 @login_required
 def unit_create(request):
-	form = UnitForm(request.POST or None, owner=request.user)
+	form = UnitForm(request.POST or None)
 	if request.method == 'POST' and form.is_valid():
 		unit = form.save(commit=False)
 		unit.property = form.cleaned_data['property']
@@ -80,8 +82,8 @@ def unit_create(request):
 
 @login_required
 def unit_update(request, pk):
-	unit = get_object_or_404(Unit, pk=pk, property__owner=request.user)
-	form = UnitForm(request.POST or None, instance=unit, owner=request.user)
+	unit = get_object_or_404(Unit, pk=pk)
+	form = UnitForm(request.POST or None, instance=unit)
 	if request.method == 'POST' and form.is_valid():
 		unit = form.save(commit=False)
 		unit.property = form.cleaned_data['property']
@@ -93,7 +95,7 @@ def unit_update(request, pk):
 
 @login_required
 def unit_delete(request, pk):
-	unit = get_object_or_404(Unit, pk=pk, property__owner=request.user)
+	unit = get_object_or_404(Unit, pk=pk)
 	if request.method == 'POST':
 		unit.delete()
 		messages.success(request, 'L’unité locative a été supprimée.')

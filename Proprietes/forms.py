@@ -6,7 +6,7 @@ from .models import Property, Unit
 class PropertyForm(forms.ModelForm):
     class Meta:
         model = Property
-        exclude = ('owner',)
+        exclude = ('owner', 'organization')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Ex. Residence Le Parc'}),
             'address': forms.TextInput(attrs={'placeholder': 'Adresse complete'}),
@@ -35,16 +35,17 @@ class UnitForm(forms.ModelForm):
 
     class Meta:
         model = Unit
-        exclude = ('property',)
+        exclude = ('property', 'organization')
         widgets = {
             'available_from': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, owner=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if owner is not None:
-            self.fields['property'].queryset = Property.objects.filter(owner=owner)
+        # Plus besoin de filtrer par proprietaire : le manager restreint
+        # deja a l'organisation active.
+        self.fields['property'].queryset = Property.objects.all()
         if self.instance and self.instance.pk:
             self.fields['property'].initial = self.instance.property_id
         for field in self.fields.values():
